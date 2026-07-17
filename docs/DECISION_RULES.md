@@ -123,6 +123,12 @@ just locally in one file).
 **Rationale:** The global exception handler in `main.py` formats all validation and HTTP exceptions to the standard D7 error envelope. Passing a dict allows setting explicit, domain-specific error codes (like `INVALID_STATE_TRANSITION`) instead of defaulting to generic ones (like `BAD_REQUEST`).
 **Do NOT:** raise `HTTPException(status_code=..., detail="bare string message")` or construct arbitrary custom error responses.
 
+### D12. API routes return `*Read` schemas, never raw SQLModel objects
+
+**Decision:** Every route returns a Pydantic `*Read` schema (`UserRead`, `ProjectRead`, etc.), never the raw SQLModel table object.
+**Rationale:** `User` includes `password_hash`. If a route ever returns the raw model instead of a schema that explicitly excludes it, the hash leaks to the browser — this makes that a type/schema mismatch instead of something that depends on someone remembering not to do it.
+**Do NOT:** return a raw SQLModel object from any route. Always construct the `*Read` schema explicitly.
+
 ---
 
 ## Adding a new decision

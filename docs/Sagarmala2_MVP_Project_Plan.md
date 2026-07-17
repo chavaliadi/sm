@@ -231,12 +231,12 @@ You are actively coding this time (not purely reviewing), which changes the spli
 
 | Module | Owner | Notes |
 |---|---|---|
-| Admin & Access Control (RBAC) | **You (Senior)** | Build first, freeze early. No one else touches auth logic once frozen. |
-| Project Configuration & Lifecycle | Junior 1 | Spine of the app — schema needs to be right early since other modules attach to "project." |
-| DPR Submission & Approval Workflow | Junior 2 | Headline feature — hand them the state machine in Section 5 directly, don't let them design it from scratch. |
-| Task Management | Junior 3 | Fully independent tables/routes — safe to build fully in parallel, low conflict risk. |
-| Stakeholder & Meeting Management + **Integration Owner** | Junior 4 (most confident of the four) | Simple CRUD module, plus: **owns** the seed script/demo data (Section 13), shared frontend component library (Section 12), smoke-testing checklist, and resolving simple merge conflicts — so none of that lands on you. |
-| Dashboard / MIS | **You (Senior)** | Scaffolded Day 5 with mock data (Section 10) — not left until the end. One bar chart, one pie chart, cards, tables — nothing fancier (Section 10). |
+| Admin & Access Control (RBAC) | **Adithya (Lead)** | Build first, freeze early. No one else touches auth logic once frozen. |
+| Project Configuration & Lifecycle | **Pragnya** | Spine of the app — schema needs to be right early since other modules attach to "project." |
+| DPR Submission & Approval Workflow | **Shashank** | Headline feature — hand them the state machine in Section 5 directly, don't let them design it from scratch. |
+| Task Management | **Jayanth** | Fully independent tables/routes — safe to build fully in parallel, low conflict risk. |
+| Stakeholder & Meeting Management + **Integration Owner** | **Kavya** (most confident of the four) | Simple CRUD module, plus: **owns** the seed script/demo data (Section 13), shared frontend component library (Section 12), smoke-testing checklist, and resolving simple merge conflicts — so none of that lands on you. |
+| Dashboard / MIS | **Adithya (Lead)** | Scaffolded Day 5 with mock data (Section 10) — not left until the end. One bar chart, one pie chart, cards, tables — nothing fancier (Section 10). |
 
 **Your responsibilities:** architecture, RBAC, Dashboard, PR review, Alembic migration ownership (Section 9), final integration. That's it — demo data, shared UI components, and smoke testing now belong to the Integration Owner, not you, so this list stays realistic alongside actually writing code.
 

@@ -1,5 +1,5 @@
 # Sagarmala 2.0 Portal — Developer Handbook
-### Senior Developer / Team Lead — RBAC + Dashboard/MIS + Architecture
+### Adithya (Senior Developer / Team Lead) — RBAC + Dashboard/MIS + Architecture
 
 **Project recap:** Sagarmala 2.0 Portal MVP — a focused slice of the
 Sagarmala 2.0 RFP covering Phase 1 (Appraisal & Sanction) only: a project

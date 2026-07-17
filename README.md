@@ -84,7 +84,8 @@ The application implements a clean, decoupled **Layered Architecture** designed 
     *   **List Success:** `{ "data": [...], "meta": { "page": 1, "page_size": 20, "total": X } }`
     *   **Detail Success:** `{ "data": {...}, "meta": {} }`
     *   **Error:** `{ "error": { "code": "ERROR_CODE", "message": "Reason details", "field": null } }`
-*   **D11. Secure Read Schemas:** API routes always return custom `*Read` schemas (e.g. `UserRead`, `ProjectRead`) rather than raw database models. This ensures sensitive properties like `password_hash` physically cannot leak to the frontend.
+*   **D11. Error Raising Convention:** Always raise `HTTPException` with a detail dictionary containing `"code"`, `"message"`, and `"field"` keys. Raw error strings are mapped to standard envelopes, but explicit error codes should be set.
+*   **D12. Secure Read Schemas:** API routes always return custom `*Read` schemas (e.g. `UserRead`, `ProjectRead`) rather than raw database models. This ensures sensitive properties like `password_hash` physically cannot leak to the frontend.
 
 ---
 
@@ -94,12 +95,12 @@ Work is divided into 6 vertical slices. Each developer owns their module's front
 
 | Module | Owner | Core Scope & Workflow |
 | :--- | :--- | :--- |
-| **1. Admin & Access Control (RBAC)** | **Senior (Lead)** | User sign-in, JWT token issuance, dynamic permission validation, and user/role administration. |
-| **2. Project Configuration** | Junior 1 | Setting up the project spine (`Project` model), categories, geographic mapping (states/ports), estimated costs, and lifecycle stage tracking. |
-| **3. DPR Submission & Approval** | Junior 2 | DPR lifecycle state machine, resubmission loops, version increments, and logging to the `dpr_audit_log` trail. |
-| **4. Task Management** | Junior 3 | Creating, assigning, scheduling, and updating tasks (`Task` model) linked to projects. |
-| **5. Stakeholder & Meeting** | Junior 4 (Integration Owner) | Directory of external stakeholders and meeting minutes logger. Also owns the shared component library and demo `seed.py` script. |
-| **6. Dashboard / MIS** | **Senior (Lead)** | Real-time analytical view with KPI cards, one project-by-stage bar chart, and one task-status pie chart (mocked on Day 5, wired to live data incrementally). |
+| **1. Admin & Access Control (RBAC)** | **Adithya (Lead)** | User sign-in, JWT token issuance, dynamic permission validation, and user/role administration. |
+| **2. Project Configuration** | **Pragnya** | Setting up the project spine (`Project` model), categories, geographic mapping (states/ports), estimated costs, and lifecycle stage tracking. |
+| **3. DPR Submission & Approval** | **Shashank** | DPR lifecycle state machine, resubmission loops, version increments, and logging to the `dpr_audit_log` trail. |
+| **4. Task Management** | **Jayanth** | Creating, assigning, scheduling, and updating tasks (`Task` model) linked to projects. |
+| **5. Stakeholder & Meeting** | **Kavya (Integration Owner)** | Directory of external stakeholders and meeting minutes logger. Also owns the shared component library and demo `seed.py` script. |
+| **6. Dashboard / MIS** | **Adithya (Lead)** | Real-time analytical view with KPI cards, one project-by-stage bar chart, and one task-status pie chart (mocked on Day 5, wired to live data incrementally). |
 
 ---
 

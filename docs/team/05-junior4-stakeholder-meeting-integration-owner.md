@@ -1,5 +1,5 @@
 # Sagarmala 2.0 Portal — Developer Handbook
-### Junior Developer 4 — Stakeholder & Meeting Management + Integration Owner
+### Kavya (Junior Developer 4) — Stakeholder & Meeting Management + Integration Owner
 
 **Project recap:** Sagarmala 2.0 Portal MVP — a focused slice of the
 Sagarmala 2.0 RFP covering Phase 1 (Appraisal & Sanction) only: a project

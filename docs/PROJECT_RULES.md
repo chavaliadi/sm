@@ -29,12 +29,12 @@ out of scope and ask for confirmation first.
 
 | # | Module | Owner |
 |---|---|---|
-| 1 | Admin & Access Control (RBAC) | Senior / Team Lead |
-| 2 | Project Configuration & Lifecycle | Junior 1 |
-| 3 | DPR Submission & Approval Workflow | Junior 2 |
-| 4 | Task Management | Junior 3 |
-| 5 | Stakeholder & Meeting Management | Junior 4 |
-| 6 | Dashboard / MIS | Senior / Team Lead |
+| 1 | Admin & Access Control (RBAC) | Adithya (Lead) |
+| 2 | Project Configuration & Lifecycle | Pragnya |
+| 3 | DPR Submission & Approval Workflow | Shashank |
+| 4 | Task Management | Jayanth |
+| 5 | Stakeholder & Meeting Management | Kavya (Integration Owner) |
+| 6 | Dashboard / MIS | Adithya (Lead) |
 
 ## 3. Explicitly out of scope — do not build, even if asked casually
 
