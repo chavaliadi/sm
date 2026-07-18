@@ -15,7 +15,7 @@ from app.core.security import decode_access_token
 from app.db.session import get_session
 from app.models.auth import User, Role, RolePermission, Permission
 
-reusable_oauth2 = HTTPBearer()
+reusable_oauth2 = HTTPBearer(auto_error=False)
 
 
 def get_current_user(
@@ -23,6 +23,11 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(reusable_oauth2),
 ) -> User:
     """Decode Bearer token and return the active User object."""
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"code": "INVALID_TOKEN", "message": "Not authenticated"},
+        )
     token = credentials.credentials
     try:
         payload = decode_access_token(token)
