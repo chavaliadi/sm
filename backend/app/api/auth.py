@@ -4,7 +4,7 @@ Auth API routes: login, user management, permission listing.
 All error responses use D11 detail dicts so the global handler in main.py
 wraps them into the standard D7 error envelope.
 """
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlmodel import Session
 
 from app.db.session import get_session
@@ -156,11 +156,15 @@ def create_user(
     response_model=PaginatedResponse[UserRead],
     dependencies=[Depends(require_permission("MANAGE_USERS"))],
 )
-def get_users(session: Session = Depends(get_session)):
-    users = auth_service.list_users(session)
+def get_users(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    session: Session = Depends(get_session),
+):
+    users, total = auth_service.list_users(session, page=page, page_size=page_size)
     return PaginatedResponse(
         data=[UserRead.model_validate(u) for u in users],
-        meta=PaginationMeta(page=1, page_size=20, total=len(users)),
+        meta=PaginationMeta(page=page, page_size=page_size, total=total),
     )
 
 
@@ -170,9 +174,16 @@ def get_users(session: Session = Depends(get_session)):
     response_model=PaginatedResponse[PermissionRead],
     dependencies=[Depends(require_permission("MANAGE_USERS"))],
 )
-def get_permissions(session: Session = Depends(get_session)):
-    permissions = auth_service.list_permissions(session)
+def get_permissions(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    session: Session = Depends(get_session),
+):
+    permissions, total = auth_service.list_permissions(
+        session, page=page, page_size=page_size
+    )
     return PaginatedResponse(
         data=[PermissionRead.model_validate(p) for p in permissions],
-        meta=PaginationMeta(page=1, page_size=50, total=len(permissions)),
+        meta=PaginationMeta(page=page, page_size=page_size, total=total),
     )
+

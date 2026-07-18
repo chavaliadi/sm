@@ -6,7 +6,7 @@ Route → Service → SQLModel Session (no Repository layer, per D1).
 """
 from typing import Optional
 
-from sqlmodel import Session, select
+from sqlmodel import Session, select, func
 
 from app.models.auth import User, Role, Permission
 from app.core.security import hash_password, verify_password
@@ -49,15 +49,30 @@ def create_user(
     return user
 
 
-def list_users(session: Session) -> list[User]:
-    statement = select(User)
-    return list(session.exec(statement).all())
+def list_users(
+    session: Session, page: int = 1, page_size: int = 20
+) -> tuple[list[User], int]:
+    total_statement = select(func.count(User.id))
+    total = session.exec(total_statement).one()
+
+    offset = (page - 1) * page_size
+    statement = select(User).offset(offset).limit(page_size)
+    users = list(session.exec(statement).all())
+    return users, total
 
 
 def get_role_by_id(session: Session, role_id: int) -> Optional[Role]:
     return session.get(Role, role_id)
 
 
-def list_permissions(session: Session) -> list[Permission]:
-    statement = select(Permission)
-    return list(session.exec(statement).all())
+def list_permissions(
+    session: Session, page: int = 1, page_size: int = 20
+) -> tuple[list[Permission], int]:
+    total_statement = select(func.count(Permission.id))
+    total = session.exec(total_statement).one()
+
+    offset = (page - 1) * page_size
+    statement = select(Permission).offset(offset).limit(page_size)
+    permissions = list(session.exec(statement).all())
+    return permissions, total
+
