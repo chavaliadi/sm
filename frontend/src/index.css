@@ -1,13 +1,9 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600&display=swap");
+
 @import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
 
-/*
-  shadcn/ui theme variables (new-york style, neutral base).
-  Generated manually because ui.shadcn.com isn't reachable from this sandbox's
-  network — running `npx shadcn add <component>` locally will slot components
-  in against these same variables without needing to redo this file.
-*/
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -33,25 +29,52 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  color-scheme: light;
+  
+  /* App Shell Variables from reference ERP */
+  --app-shell-bg: #edf2f8;
+  --app-header-bg: rgba(248, 250, 252, 0.92);
+  --app-header-border: rgba(148, 163, 184, 0.22);
+  --app-header-glow: rgba(59, 130, 246, 0.16);
+  --app-sidebar-bg: linear-gradient(180deg, #1e3a5f 0%, #23456e 100%);
+  --app-sidebar-border: rgba(191, 219, 254, 0.16);
+  --app-sidebar-text: rgba(239, 246, 255, 0.94);
+  --app-sidebar-muted: rgba(219, 234, 254, 0.66);
+  --app-sidebar-hover-bg: rgba(255, 255, 255, 0.09);
+  --app-sidebar-hover-text: #ffffff;
+  --app-sidebar-active-bg: rgba(255, 255, 255, 0.16);
+  --app-sidebar-active-text: #ffffff;
+  --app-sidebar-subnav-border: rgba(191, 219, 254, 0.18);
+  --app-main-bg: #f6f8fc;
+  --app-main-gradient-a: rgba(63, 118, 199, 0.14);
+  --app-main-gradient-b: rgba(255, 255, 255, 0);
+  --app-panel-bg: rgba(255, 255, 255, 0.82);
+  --app-panel-border: rgba(148, 163, 184, 0.18);
+  --app-brand-bg: linear-gradient(135deg, #3f76c7 0%, #274d86 100%);
+  --app-brand-fg: #ffffff;
+  --app-page-header-accent: rgba(63, 118, 199, 0.12);
+
+  /* shadcn/ui variables mapped to ERP palette */
+  --background: #f6f8fc;
+  --foreground: #0f172a;
+  --card: rgba(255, 255, 255, 0.82);
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --secondary: #cbd5e1;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+  --destructive: #e11d48;
+  --destructive-foreground: #ffffff;
+  --border: rgba(148, 163, 184, 0.18);
+  --input: rgba(148, 163, 184, 0.18);
+  --ring: #2563eb;
+  --radius: 0.5rem;
 }
 
 .dark {
@@ -80,6 +103,73 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    background: var(--app-shell-bg);
+    color: #0f172a;
+    font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
   }
+  h1, h2, h3, h4 {
+    font-family: "Space Grotesk", "IBM Plex Sans", sans-serif;
+  }
+}
+
+/* App Shell styles from reference ERP layout */
+.app-shell {
+  background: var(--app-shell-bg);
+}
+
+.app-header {
+  background:
+    linear-gradient(90deg, var(--app-header-glow) 0%, transparent 34%),
+    var(--app-header-bg);
+  border-color: var(--app-header-border);
+  backdrop-filter: blur(10px);
+}
+
+.app-sidebar {
+  background: var(--app-sidebar-bg);
+  border-color: var(--app-sidebar-border);
+  color: var(--app-sidebar-text);
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.03);
+}
+
+.app-sidebar-item {
+  color: var(--app-sidebar-muted);
+}
+
+.app-sidebar-item:hover {
+  background: var(--app-sidebar-hover-bg);
+  color: var(--app-sidebar-hover-text);
+}
+
+.app-sidebar-item-active {
+  background: var(--app-sidebar-active-bg);
+  color: var(--app-sidebar-active-text);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+}
+
+.app-sidebar-subnav {
+  border-color: var(--app-sidebar-subnav-border);
+}
+
+.app-main {
+  background:
+    radial-gradient(circle at top right, var(--app-main-gradient-a) 0%, transparent 32rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.38) 0%, var(--app-main-gradient-b) 30%),
+    var(--app-main-bg);
+}
+
+.app-brand-mark {
+  background: var(--app-brand-bg);
+  color: var(--app-brand-fg);
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.16);
+}
+
+.app-page-header {
+  border: 1px solid var(--app-panel-border);
+  background:
+    linear-gradient(135deg, var(--app-page-header-accent) 0%, transparent 60%),
+    var(--app-panel-bg);
+  backdrop-filter: blur(8px);
+  border-radius: 1rem;
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.04);
 }
