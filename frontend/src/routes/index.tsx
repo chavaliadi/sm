@@ -5,6 +5,8 @@ import { ProjectsPage } from "@/pages/ProjectsPage";
 import { DprsPage } from "@/pages/DprsPage";
 import { TasksPage } from "@/pages/TasksPage";
 import { StakeholdersPage } from "@/pages/StakeholdersPage";
+import { LoginPage } from "@/pages/LoginPage";
+import { RegisterPage } from "@/pages/RegisterPage";
 
 /**
  * Route table — one place to see every page in the app. As modules land,
@@ -50,5 +52,13 @@ export const router = createBrowserRouter([
         <StakeholdersPage />
       </AppLayout>
     ),
+  },
+  {
+    path: "/login",
+    element: <LoginPage />,
+  },
+  {
+    path: "/register",
+    element: <RegisterPage />,
   },
 ]);
