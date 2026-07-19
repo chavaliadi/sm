@@ -1,7 +1,9 @@
 import { createBrowserRouter } from "react-router-dom";
-import { AppLayout } from "@/layouts/AppLayout";
-import { TaskManagementPage } from "@/features/tasks/TaskManagementPage";
-import { HomePage } from "@/pages/HomePage";
+import { AppLayout } from "../layouts/AppLayout";
+import { HomePage } from "../pages/HomePage";
+import { StakeholdersPage } from "../pages/StakeholdersPage";
+import { MeetingsPage } from "../pages/MeetingsPage";
+import { TaskManagementPage } from "../features/tasks/TaskManagementPage";
 
 /**
  * Route table — one place to see every page in the app. As modules land,
@@ -24,4 +26,21 @@ export const router = createBrowserRouter([
       </AppLayout>
     ),
   },
+  {
+    path: "/stakeholders",
+    element: (
+      <AppLayout>
+        <StakeholdersPage />
+      </AppLayout>
+    ),
+  },
+  {
+    path: "/meetings",
+    element: (
+      <AppLayout>
+        <MeetingsPage />
+      </AppLayout>
+    ),
+  },
 ]);
+
