@@ -15,7 +15,10 @@ from app.api.auth import router as auth_router
 from app.api.projects import router as projects_router
 from app.api.dpr import router as dpr_router
 from app.api.tasks import router as tasks_router
-from app.api.stakeholders import router as stakeholders_router
+from app.api.stakeholders import (
+    router as stakeholders_router,
+    meetings_router,
+)
 from app.api.notifications import router as notifications_router
 
 app = FastAPI(
@@ -92,6 +95,7 @@ app.include_router(projects_router)
 app.include_router(dpr_router)
 app.include_router(tasks_router)
 app.include_router(stakeholders_router)
+app.include_router(meetings_router)
 app.include_router(notifications_router)
 
 
