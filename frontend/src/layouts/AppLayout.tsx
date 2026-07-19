@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
 
 /**
  * Page shell — sidebar + topbar + content area. Every module's pages render
@@ -16,7 +17,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <div className="rounded-md px-2 py-1.5">Dashboard</div>
           <div className="rounded-md px-2 py-1.5">Projects</div>
           <div className="rounded-md px-2 py-1.5">DPR Approvals</div>
-          <div className="rounded-md px-2 py-1.5">Tasks</div>
+          <Link
+            to="/tasks"
+            className="block rounded-md px-2 py-1.5 hover:bg-gray-100 hover:text-gray-900"
+          >
+            Tasks
+          </Link>
           <div className="rounded-md px-2 py-1.5">Stakeholders</div>
         </nav>
       </aside>
