@@ -22,7 +22,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </Link>
           <div className="rounded-md px-2 py-1.5 text-gray-400">Projects</div>
           <div className="rounded-md px-2 py-1.5 text-gray-400">DPR Approvals</div>
-          <div className="rounded-md px-2 py-1.5 text-gray-400">Tasks</div>
+          <Link
+            to="/tasks"
+            className="block rounded-md px-2 py-1.5 font-medium hover:bg-gray-100 hover:text-gray-900"
+          >
+            Tasks
+          </Link>
           <Link
             to="/stakeholders"
             className="block rounded-md px-2 py-1.5 font-medium hover:bg-gray-100 hover:text-gray-900"

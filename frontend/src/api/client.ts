@@ -12,5 +12,10 @@ export const apiClient = axios.create({
   },
 });
 
-// Placeholder for later: once RBAC issues JWTs, an interceptor here attaches
-// `Authorization: Bearer <token>` to every request. Not needed for scaffold.
+apiClient.interceptors.request.use((config) => {
+  const accessToken = window.localStorage.getItem("access_token");
+  if (accessToken !== null) {
+    config.headers.set("Authorization", `Bearer ${accessToken}`);
+  }
+  return config;
+});

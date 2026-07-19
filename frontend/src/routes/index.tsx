@@ -3,6 +3,7 @@ import { AppLayout } from "../layouts/AppLayout";
 import { HomePage } from "../pages/HomePage";
 import { StakeholdersPage } from "../pages/StakeholdersPage";
 import { MeetingsPage } from "../pages/MeetingsPage";
+import { TaskManagementPage } from "../features/tasks/TaskManagementPage";
 
 /**
  * Route table — one place to see every page in the app. As modules land,
@@ -14,6 +15,14 @@ export const router = createBrowserRouter([
     element: (
       <AppLayout>
         <HomePage />
+      </AppLayout>
+    ),
+  },
+  {
+    path: "/tasks",
+    element: (
+      <AppLayout>
+        <TaskManagementPage />
       </AppLayout>
     ),
   },
