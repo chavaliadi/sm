@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { Plus, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 import { getProjects } from "@/api/portal";
 import type { ProjectRead } from "@/types";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -287,7 +287,7 @@ export function ProjectsPage() {
       <DataTable
         data={filteredProjects}
         columns={columns}
-        getRowId={(project) => project.id}
+        getRowId={(project) => String(project.id)}
         isLoading={loading}
         error={error}
         onRetry={fetchProjects}

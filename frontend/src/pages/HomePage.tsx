@@ -335,13 +335,13 @@ export function HomePage() {
           <DataTable
             data={projects.slice(0, 5)}
             columns={columns}
-            getRowId={(project) => project.id}
+            getRowId={(project) => String(project.id)}
             isLoading={loading}
             error={error}
             onRetry={fetchProjectData}
             emptyTitle="No projects configured"
             emptySubtitle="Projects loaded from your portal configuration will appear here."
-            onRowClick={(project) => navigate("/projects")}
+            onRowClick={() => navigate("/projects")}
           />
         </CardContent>
       </Card>

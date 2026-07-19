@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { Plus, CheckSquare, Calendar, User, Tag, RefreshCw } from "lucide-react";
+import { Plus, CheckSquare, Calendar, Tag, RefreshCw } from "lucide-react";
 import { getTasks, getProjects } from "@/api/portal";
 import type { TaskRead, ProjectRead } from "@/types";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -300,7 +300,7 @@ export function TasksPage() {
         <DataTable
           data={filteredTasks}
           columns={columns}
-          getRowId={(task) => task.id}
+          getRowId={(task) => String(task.id)}
           isLoading={loading}
           error={error}
           onRetry={loadData}

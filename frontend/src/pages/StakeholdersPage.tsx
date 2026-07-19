@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { Plus, Users, Calendar, HelpCircle, FileText, RefreshCw } from "lucide-react";
+import { Plus, Users, Calendar, FileText, RefreshCw } from "lucide-react";
 import { getStakeholders, getMeetings, getProjects } from "@/api/portal";
 import type { StakeholderRead, MeetingRead, ProjectRead } from "@/types";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -7,7 +7,6 @@ import { DataTable, type Column } from "@/components/common/DataTable";
 import { FilterBar } from "@/components/common/FilterBar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 // Fallback data if backend is empty
@@ -284,7 +283,7 @@ export function StakeholdersPage() {
           <DataTable
             data={filteredStakeholders}
             columns={stakeholderColumns}
-            getRowId={(s) => s.id}
+            getRowId={(s) => String(s.id)}
             isLoading={loading}
             error={error}
             onRetry={loadData}
@@ -297,7 +296,7 @@ export function StakeholdersPage() {
           <DataTable
             data={filteredMeetings}
             columns={meetingColumns}
-            getRowId={(m) => m.id}
+            getRowId={(m) => String(m.id)}
             isLoading={loading}
             error={error}
             onRetry={loadData}

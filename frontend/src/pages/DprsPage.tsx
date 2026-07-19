@@ -334,7 +334,7 @@ export function DprsPage() {
       <DataTable
         data={filteredDprs}
         columns={columns}
-        getRowId={(dpr) => dpr.id}
+        getRowId={(dpr) => String(dpr.id)}
         isLoading={loading}
         error={error}
         onRetry={loadData}
