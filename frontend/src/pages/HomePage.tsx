@@ -1,47 +1,293 @@
-import { useEffect, useState } from "react";
-import { getHealth } from "@/api/health";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
+import { getProjects } from "@/api/projects";
+import { getTasks } from "@/api/tasks";
+import type { ProjectRead } from "@/types";
+import type { TaskRead } from "@/types/task";
 
-/**
- * Scaffold verification page — proves the frontend can reach the backend.
- * Replace with the real Dashboard (Section 10 of the plan: Day 5 mock data,
- * wired to real endpoints incrementally).
- */
+const PIE_COLORS = {
+  TODO: "#64748b",
+  IN_PROGRESS: "#0284c7",
+  DONE: "#10b981",
+};
+
 export function HomePage() {
-  const [status, setStatus] = useState<"loading" | "ok" | "error">("loading");
-  const [detail, setDetail] = useState<string>("");
+  const [projects, setProjects] = useState<ProjectRead[]>([]);
+  const [tasks, setTasks] = useState<TaskRead[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    getHealth()
-      .then((res) => {
-        setStatus("ok");
-        setDetail(res.status);
-      })
-      .catch((err) => {
-        setStatus("error");
-        setDetail(err instanceof Error ? err.message : "Unknown error");
-      });
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [projectsRes, tasksRes] = await Promise.all([
+        getProjects({ page: 1, page_size: 100 }),
+        getTasks(1, 100),
+      ]);
+      setProjects(projectsRes.data || []);
+      setTasks(tasksRes.data || []);
+    } catch (err) {
+      console.error("Dashboard fetch error:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to load dashboard data. Ensure backend is running and you are logged in."
+      );
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    void fetchData();
+  }, [fetchData]);
+
+  // KPI Calculations
+  const kpiData = useMemo(() => {
+    const totalProjects = projects.length;
+    const activeTasks = tasks.filter(
+      (t) => t.status === "TODO" || t.status === "IN_PROGRESS"
+    ).length;
+    const completedTasks = tasks.filter((t) => t.status === "DONE").length;
+
+    return {
+      totalProjects,
+      activeTasks,
+      completedTasks,
+    };
+  }, [projects, tasks]);
+
+  // Bar Chart: Project Count by Lifecycle Stage
+  const projectStageData = useMemo(() => {
+    const stages = [
+      { key: "INITIATION", label: "Initiation" },
+      { key: "APPRAISAL", label: "Appraisal" },
+      { key: "SANCTIONED", label: "Sanctioned" },
+      { key: "UNDER_EXECUTION", label: "Under Execution" },
+      { key: "COMPLETED", label: "Completed" },
+    ];
+
+    return stages.map((stage) => ({
+      stage: stage.label,
+      count: projects.filter((p) => {
+        const stageUpper = p.lifecycle_stage?.toUpperCase() || "";
+        if (stage.key === "APPRAISAL") {
+          return stageUpper.includes("APPRAISAL") || stageUpper.includes("SANCTION");
+        }
+        return stageUpper === stage.key || p.lifecycle_stage === stage.label;
+      }).length,
+    }));
+  }, [projects]);
+
+  // Pie Chart: Task Status Breakdown
+  const taskStatusData = useMemo(() => {
+    const statuses = [
+      { key: "TODO", label: "To Do", color: PIE_COLORS.TODO },
+      { key: "IN_PROGRESS", label: "In Progress", color: PIE_COLORS.IN_PROGRESS },
+      { key: "DONE", label: "Done", color: PIE_COLORS.DONE },
+    ];
+
+    return statuses.map((st) => ({
+      name: st.label,
+      status: st.key,
+      count: tasks.filter((t) => t.status === st.key).length,
+      color: st.color,
+    }));
+  }, [tasks]);
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center text-sm text-gray-500">
+        Loading dashboard metrics…
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-700">
+        <h2 className="font-semibold text-red-800">Error Loading Dashboard</h2>
+        <p className="mt-1">{error}</p>
+        <button
+          onClick={() => void fetchData()}
+          className="mt-4 rounded-md bg-red-700 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-red-800"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-xl">
-      <h1 className="mb-2 text-xl font-semibold text-gray-900">
-        Project scaffold running
-      </h1>
-      <p className="mb-4 text-sm text-gray-500">
-        This page confirms the frontend can reach the FastAPI backend before
-        any real module gets built.
-      </p>
-      <div className="rounded-md border border-gray-200 bg-white p-4 text-sm">
-        <span className="font-medium">Backend health check: </span>
-        {status === "loading" && <span className="text-gray-500">checking…</span>}
-        {status === "ok" && (
-          <span className="text-green-600">connected ({detail})</span>
-        )}
-        {status === "error" && (
-          <span className="text-red-600">
-            failed — is uvicorn running on port 8000? ({detail})
-          </span>
-        )}
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+          Dashboard / MIS
+        </h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Executive portfolio metrics and breakdown for Sagarmala 2.0.
+        </p>
+      </div>
+
+      {/* 4 KPI Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Card 1: Total Projects */}
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+            Total Projects
+          </p>
+          <p className="mt-2 text-3xl font-bold text-gray-900">
+            {kpiData.totalProjects}
+          </p>
+          <p className="mt-1 text-xs text-gray-500">Monitored port projects</p>
+        </div>
+
+        {/* Card 2: Active Tasks */}
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+            Active Tasks
+          </p>
+          <p className="mt-2 text-3xl font-bold text-sky-700">
+            {kpiData.activeTasks}
+          </p>
+          <p className="mt-1 text-xs text-gray-500">To do & in progress</p>
+        </div>
+
+        {/* Card 3: Completed Tasks */}
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+            Completed Tasks
+          </p>
+          <p className="mt-2 text-3xl font-bold text-emerald-600">
+            {kpiData.completedTasks}
+          </p>
+          <p className="mt-1 text-xs text-gray-500">Tasks marked as done</p>
+        </div>
+
+        {/* Card 4: Pending DPR Approvals (Placeholder for unbuilt DPR module) */}
+        <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+              Pending DPR Approvals
+            </p>
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+              Pending Module
+            </span>
+          </div>
+          <p className="mt-2 text-3xl font-bold text-gray-400">—</p>
+          <p className="mt-1 text-xs text-gray-400">
+            DPR Workflow module not yet built
+          </p>
+        </div>
+      </div>
+
+      {/* Charts Section: Exactly 1 Bar Chart + 1 Pie Chart */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Bar Chart: Projects by Lifecycle Stage */}
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="text-base font-semibold text-gray-900">
+            Project Count by Lifecycle Stage
+          </h2>
+          <p className="text-xs text-gray-500">
+            Distribution of projects across appraisal and execution stages
+          </p>
+          <div className="mt-4 h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={projectStageData}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
+                <XAxis
+                  dataKey="stage"
+                  tick={{ fontSize: 11, fill: "#64748b" }}
+                  interval={0}
+                />
+                <YAxis
+                  allowDecimals={false}
+                  tick={{ fontSize: 11, fill: "#64748b" }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#ffffff",
+                    borderColor: "#e2e8f0",
+                    borderRadius: "0.375rem",
+                    fontSize: "0.75rem",
+                  }}
+                />
+                <Bar
+                  dataKey="count"
+                  name="Projects"
+                  fill="#0284c7"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Pie Chart: Task Status Breakdown */}
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="text-base font-semibold text-gray-900">
+            Task Status Breakdown
+          </h2>
+          <p className="text-xs text-gray-500">
+            Current status distribution across active project tasks
+          </p>
+          <div className="mt-4 h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={taskStatusData}
+                  dataKey="count"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={45}
+                  outerRadius={75}
+                  paddingAngle={3}
+                  label={({ name, value }) =>
+                    typeof value === "number" && value > 0
+                      ? `${name}: ${value}`
+                      : ""
+                  }
+                >
+                  {taskStatusData.map((entry) => (
+                    <Cell key={entry.status} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#ffffff",
+                    borderColor: "#e2e8f0",
+                    borderRadius: "0.375rem",
+                    fontSize: "0.75rem",
+                  }}
+                />
+                <Legend
+                  verticalAlign="bottom"
+                  height={36}
+                  iconType="circle"
+                  formatter={(value: string) => (
+                    <span className="text-xs text-gray-600">{value}</span>
+                  )}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
     </div>
   );
