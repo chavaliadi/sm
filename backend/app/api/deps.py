@@ -13,7 +13,8 @@ from sqlmodel import Session, select
 
 from app.core.security import decode_access_token
 from app.db.session import get_session
-from app.models.auth import User, Role, RolePermission, Permission
+from app.models.auth import User, Role
+from app.core.roles import get_role_class
 
 reusable_oauth2 = HTTPBearer(auto_error=False)
 
@@ -88,15 +89,10 @@ def require_permission(permission_name: str):
                 },
             )
 
-        # Query permission names for this role via the link table
-        stmt = (
-            select(Permission.name)
-            .join(RolePermission, RolePermission.permission_id == Permission.id)
-            .where(RolePermission.role_id == role.id)
-        )
-        user_permissions = set(session.exec(stmt).all())
+        # Query permission names using the Python Class Inheritance model
+        role_class = get_role_class(role.name)
 
-        if permission_name not in user_permissions:
+        if not role_class.has_permission(permission_name):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail={

@@ -14,5 +14,6 @@ class Task(SQLModel, table=True):
     status: str  # TODO, IN_PROGRESS, DONE
     assigned_to: Optional[int] = Field(default=None, foreign_key="users.id")
     due_date: Optional[datetime] = None
+    evidence_url: Optional[str] = None
     is_active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)

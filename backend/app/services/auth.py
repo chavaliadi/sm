@@ -8,7 +8,7 @@ from typing import Optional
 
 from sqlmodel import Session, select, func
 
-from app.models.auth import User, Role, Permission
+from app.models.auth import User, Role
 from app.core.security import hash_password, verify_password
 
 
@@ -65,14 +65,5 @@ def get_role_by_id(session: Session, role_id: int) -> Optional[Role]:
     return session.get(Role, role_id)
 
 
-def list_permissions(
-    session: Session, page: int = 1, page_size: int = 20
-) -> tuple[list[Permission], int]:
-    total_statement = select(func.count(Permission.id))
-    total = session.exec(total_statement).one()
 
-    offset = (page - 1) * page_size
-    statement = select(Permission).offset(offset).limit(page_size)
-    permissions = list(session.exec(statement).all())
-    return permissions, total
 

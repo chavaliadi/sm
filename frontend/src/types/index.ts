@@ -88,6 +88,22 @@ export interface TaskRead {
   created_at: string;
 }
 
+export interface StakeholderCreate {
+  project_id: number;
+  name: string;
+  organization: string;
+  role: string;
+  contact_info?: string | null;
+}
+
+export interface StakeholderUpdate {
+  project_id?: number;
+  name?: string;
+  organization?: string;
+  role?: string;
+  contact_info?: string | null;
+}
+
 export interface StakeholderRead {
   id: number;
   project_id: number;
@@ -96,6 +112,20 @@ export interface StakeholderRead {
   role: string;
   contact_info: string | null;
   is_active: boolean;
+}
+
+export interface MeetingCreate {
+  project_id: number;
+  title: string;
+  date: string;
+  notes?: string | null;
+}
+
+export interface MeetingUpdate {
+  project_id?: number;
+  title?: string;
+  date?: string;
+  notes?: string | null;
 }
 
 export interface MeetingRead {
@@ -115,3 +145,4 @@ export interface NotificationRead {
   read: boolean;
   created_at: string;
 }
+
