@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { Trash2, Eye, FileCheck, RefreshCw } from "lucide-react";
-import { getDprs, getProjects, deleteDpr } from "@/api/portal";
+import { getDprs, getProjects, deleteDpr, getDprAuditTrail, submitDpr, smfclReviewDpr, ministryReviewDpr, releaseDprFunds, createDpr, smfclRequeueDpr } from "@/api/portal";
 import type { DPRRead, ProjectRead } from "@/types";
 import { PageHeader } from "@/components/common/PageHeader";
 import { DataTable, type Column } from "@/components/common/DataTable";
@@ -129,37 +129,7 @@ const fallbackProjects: ProjectRead[] = [
   }
 ];
 
-// Mock audit log steps for the timeline detail view
-const mockAuditTrail: Record<number, { actor: string; action: string; comment: string; date: string }[]> = {
-  1: [
-    { actor: "Port Authority", action: "SUBMIT", comment: "Initial DPR submission containing detailed cost layout and EIA clearance.", date: "2026-07-01" },
-    { actor: "SMFCL Appraisal Lead", action: "SMFCL_REVIEW_START", comment: "Assigned to technical team for feasibility check.", date: "2026-07-03" },
-    { actor: "SMFCL Appraisal Lead", action: "FORWARD", comment: "DPR matches ministry standards. Recommended for sanction.", date: "2026-07-10" },
-    { actor: "Ministry Sanction Authority", action: "APPROVE", comment: "Sanction granted. Fund release authorized under head 3601.", date: "2026-07-13" },
-    { actor: "SMFCL Appraisal Lead", action: "RELEASE_FUNDS", comment: "First tranche of 25 Crores disbursed to state treasury.", date: "2026-07-15" }
-  ],
-  2: [
-    { actor: "Port Authority", action: "SUBMIT", comment: "Initial DPR submission containing detailed bathymetric surveys.", date: "2026-07-02" },
-    { actor: "SMFCL Appraisal Lead", action: "SMFCL_REVIEW_START", comment: "Assigned to technical team for feasibility check.", date: "2026-07-05" }
-  ],
-  3: [
-    { actor: "Port Authority", action: "SUBMIT", comment: "DPR submission including multimodal connectivity blueprints.", date: "2026-07-03" },
-    { actor: "SMFCL Appraisal Lead", action: "FORWARD", comment: "Forwarded to Ministry with high recommendation.", date: "2026-07-11" },
-    { actor: "Ministry Sanction Authority", action: "APPROVE", comment: "Sanction approved.", date: "2026-07-17" }
-  ],
-  4: [
-    { actor: "Port Authority", action: "CREATE", comment: "Draft created in workspace.", date: "2026-07-04" }
-  ],
-  5: [
-    { actor: "Port Authority", action: "SUBMIT", comment: "Initial submission.", date: "2026-07-05" },
-    { actor: "SMFCL Appraisal Lead", action: "FORWARD", comment: "Recommending approval.", date: "2026-07-15" }
-  ],
-  7: [
-    { actor: "Port Authority", action: "SUBMIT", comment: "Initial submission.", date: "2026-07-08" },
-    { actor: "SMFCL Appraisal Lead", action: "FORWARD", comment: "Recommending approval.", date: "2026-07-12" },
-    { actor: "Ministry Sanction Authority", action: "REJECT", comment: "Incomplete financial structure. Revise and resubmit.", date: "2026-07-19" }
-  ]
-};
+
 
 export function DprsPage() {
   const { toast } = useToast();
@@ -170,6 +140,10 @@ export function DprsPage() {
   const [search, setSearch] = useState("");
   const [selectedDpr, setSelectedDpr] = useState<DPRRead | null>(null);
 
+  const [auditTrail, setAuditTrail] = useState<any[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [userRole, setUserRole] = useState<string>("Admin"); // Port Authority, SMFCL, Ministry, Admin
+
   const loadData = () => {
     setLoading(true);
     Promise.all([getDprs(), getProjects()])
@@ -179,7 +153,7 @@ export function DprsPage() {
         } else {
           setDprs(fallbackDprs);
         }
-        
+
         if (projRes.data && projRes.data.length > 0) {
           setProjects(projRes.data);
         } else {
@@ -201,6 +175,38 @@ export function DprsPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (selectedDpr) {
+      setAuditLoading(true);
+      getDprAuditTrail(selectedDpr.id)
+        .then(res => {
+          if (res.data) setAuditTrail(res.data);
+          else setAuditTrail([]);
+        })
+        .catch(err => {
+          console.error("Failed to load audit trail:", err);
+          setAuditTrail([]);
+        })
+        .finally(() => setAuditLoading(false));
+    } else {
+      setAuditTrail([]);
+    }
+  }, [selectedDpr]);
+
+  const handleAction = async (actionFn: () => Promise<any>, successTitle: string) => {
+    try {
+      await actionFn();
+      toast?.({ title: successTitle, description: "Action completed successfully." });
+      loadData();
+      if (selectedDpr) {
+        setSelectedDpr(null);
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast?.({ title: "Action Failed", description: err.response?.data?.detail?.message || "An error occurred.", variant: "destructive" });
+    }
+  };
 
   const projectMap = useMemo(() => {
     return new Map(projects.map((p) => [p.id, p]));
@@ -312,14 +318,26 @@ export function DprsPage() {
         subtitle="Manage Detailed Project Report appraisals, observe version sequences, and audit ministry approval states."
         breadcrumbs={[{ label: "DPR Approvals" }]}
         actions={
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            <select
+              value={userRole}
+              onChange={(e) => setUserRole(e.target.value)}
+              className="h-9 px-3 border border-slate-200 rounded-md text-sm bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="Admin">Admin</option>
+              <option value="Port Authority">Port Authority</option>
+              <option value="SMFCL">SMFCL</option>
+              <option value="Ministry">Ministry</option>
+            </select>
             <Button variant="outline" className="border-slate-200 hover:bg-slate-50 cursor-pointer" onClick={loadData}>
               <RefreshCw className="mr-2 h-4 w-4" />
               Sync Workflow
             </Button>
-            <Button className="cursor-pointer">
-              Submit DPR
-            </Button>
+            {(userRole === "Port Authority" || userRole === "Admin") && (
+              <Button className="cursor-pointer" onClick={() => handleAction(() => createDpr({ project_id: 1 }), "Draft Created")}>
+                Create Draft DPR
+              </Button>
+            )}
           </div>
         }
       />
@@ -363,6 +381,39 @@ export function DprsPage() {
             </DialogHeader>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* Project Lifecycle Progress Bar */}
+              <div className="mb-4">
+                <span className="block text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wider">Project Journey</span>
+                <div className="relative">
+                  <div className="overflow-hidden h-2 mb-4 text-xs flex rounded-full bg-slate-100">
+                    {(() => {
+                      const stages = ["INITIATION", "study_completed", "cleared_for_dpr", "APPRAISAL", "SANCTIONED"];
+                      const currentStage = projectMap.get(selectedDpr.project_id)?.lifecycle_stage || "INITIATION";
+                      let progressIndex = stages.indexOf(currentStage);
+                      if (selectedDpr.status === "APPROVED") progressIndex = 4;
+                      else if (selectedDpr.status === "FUNDS_RELEASED") progressIndex = 5;
+                      else if (progressIndex === -1) progressIndex = 2; // Fallback
+
+                      const percentage = Math.min(100, Math.max(10, (progressIndex / 4) * 100));
+
+                      return (
+                        <div style={{ width: `${percentage}%` }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-600 transition-all duration-500 ease-in-out relative">
+                          {/* animated shimmer */}
+                          <div className="absolute inset-0 bg-white/20 animate-pulse" />
+                        </div>
+                      );
+                    })()}
+                  </div>
+                  <div className="flex justify-between text-[10px] font-semibold text-slate-400">
+                    <span className={projectMap.get(selectedDpr.project_id)?.lifecycle_stage === "INITIATION" ? "text-blue-600" : ""}>Proposal</span>
+                    <span className={projectMap.get(selectedDpr.project_id)?.lifecycle_stage === "study_completed" ? "text-blue-600" : ""}>Study Completed</span>
+                    <span className={projectMap.get(selectedDpr.project_id)?.lifecycle_stage === "cleared_for_dpr" ? "text-blue-600" : ""}>DPR Cleared</span>
+                    <span className={selectedDpr.status === "APPROVED" ? "text-blue-600" : ""}>Sanctioned</span>
+                    <span className={selectedDpr.status === "FUNDS_RELEASED" ? "text-blue-600" : ""}>Funded</span>
+                  </div>
+                </div>
+              </div>
+
               {/* Status block */}
               <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
                 <div>
@@ -380,34 +431,90 @@ export function DprsPage() {
                   <FileCheck className="h-4 w-4 text-slate-500" />
                   Audit Trail History
                 </h4>
-                
+
                 <div className="relative border-l-2 border-slate-100 pl-4 ml-2 space-y-6">
-                  {mockAuditTrail[selectedDpr.id]?.map((step, idx) => (
-                    <div key={idx} className="relative">
-                      {/* Timeline dot */}
-                      <span className="absolute -left-[23px] top-1.5 h-2.5 w-2.5 rounded-full bg-blue-600 ring-4 ring-white" />
-                      
-                      <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-                        <span className="font-semibold text-slate-500">{step.actor}</span>
-                        <span>{new Date(step.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
+                  {auditLoading ? (
+                    <div className="text-xs text-slate-400 italic">Loading audit trail...</div>
+                  ) : auditTrail.length > 0 ? (
+                    auditTrail.map((step, idx) => (
+                      <div key={idx} className="relative">
+                        {/* Timeline dot */}
+                        <span className="absolute -left-[23px] top-1.5 h-2.5 w-2.5 rounded-full bg-blue-600 ring-4 ring-white" />
+
+                        <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+                          <span className="font-semibold text-slate-500">User #{step.actor_id}</span>
+                          <span>{new Date(step.timestamp).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                        </div>
+                        <div className="text-sm font-semibold text-slate-700">
+                          {step.action.replace(/_/g, " ")}
+                          {step.old_status && step.new_status && (
+                            <span className="block text-xs font-normal text-slate-400 mt-0.5">
+                              {step.old_status} &rarr; {step.new_status}
+                            </span>
+                          )}
+                        </div>
+                        {step.comment && (
+                          <p className="mt-1 text-sm text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-100/50 leading-relaxed">
+                            {step.comment}
+                          </p>
+                        )}
                       </div>
-                      <div className="text-sm font-semibold text-slate-700">
-                        {step.action.replace(/_/g, " ")}
-                      </div>
-                      {step.comment && (
-                        <p className="mt-1 text-sm text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-100/50 leading-relaxed">
-                          {step.comment}
-                        </p>
-                      )}
-                    </div>
-                  )) || (
+                    ))
+                  ) : (
                     <div className="text-xs text-slate-400 italic">No audit trail logs recorded yet.</div>
                   )}
                 </div>
               </div>
             </div>
 
-            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+              <div className="flex gap-2">
+                {/* Port Authority Actions */}
+                {(userRole === "Port Authority" || userRole === "Admin") && (selectedDpr.status === "DRAFT" || selectedDpr.status === "REJECTED_BY_SMFCL") && (
+                  <Button onClick={() => handleAction(() => submitDpr(selectedDpr.id), "DPR Submitted")} className="cursor-pointer bg-blue-600 text-white">
+                    Submit DPR
+                  </Button>
+                )}
+                {/* SMFCL Actions */}
+                {(userRole === "SMFCL" || userRole === "Admin") && selectedDpr.status === "SMFCL_REVIEW" && (
+                  <>
+                    <Button onClick={() => handleAction(() => smfclReviewDpr(selectedDpr.id, "approve"), "SMFCL Approved")} className="cursor-pointer bg-green-600 text-white hover:bg-green-700 hover:text-white">
+                      Approve (Forward)
+                    </Button>
+                    <Button onClick={() => {
+                      const comment = prompt("Enter rejection reason:");
+                      if (comment) handleAction(() => smfclReviewDpr(selectedDpr.id, "reject", comment), "SMFCL Rejected");
+                    }} variant="destructive" className="cursor-pointer">
+                      Reject
+                    </Button>
+                  </>
+                )}
+                {(userRole === "SMFCL" || userRole === "Admin") && selectedDpr.status === "REJECTED_BY_MINISTRY" && (
+                  <Button onClick={() => handleAction(() => smfclRequeueDpr(selectedDpr.id), "Requeued for SMFCL")} className="cursor-pointer bg-yellow-600 text-white hover:bg-yellow-700 hover:text-white">
+                    Requeue Review
+                  </Button>
+                )}
+                {(userRole === "SMFCL" || userRole === "Admin") && selectedDpr.status === "APPROVED" && (
+                  <Button onClick={() => handleAction(() => releaseDprFunds(selectedDpr.id), "Funds Released")} className="cursor-pointer bg-green-700 text-white hover:bg-green-800 hover:text-white">
+                    Release Funds
+                  </Button>
+                )}
+
+                {/* Ministry Actions */}
+                {(userRole === "Ministry" || userRole === "Admin") && selectedDpr.status === "FORWARDED_TO_MINISTRY" && (
+                  <>
+                    <Button onClick={() => handleAction(() => ministryReviewDpr(selectedDpr.id, "approve"), "Ministry Approved")} className="cursor-pointer bg-green-600 text-white hover:bg-green-700 hover:text-white">
+                      Final Approve
+                    </Button>
+                    <Button onClick={() => {
+                      const comment = prompt("Enter rejection reason:");
+                      if (comment) handleAction(() => ministryReviewDpr(selectedDpr.id, "reject", comment), "Ministry Rejected");
+                    }} variant="destructive" className="cursor-pointer">
+                      Reject back to SMFCL
+                    </Button>
+                  </>
+                )}
+              </div>
               <Button variant="outline" className="border-slate-200 hover:bg-slate-50 cursor-pointer" onClick={() => setSelectedDpr(null)}>
                 Close Details
               </Button>

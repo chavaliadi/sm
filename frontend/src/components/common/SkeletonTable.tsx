@@ -15,7 +15,7 @@ export function SkeletonTable({
   rows = 8,
   columns = 5,
   className,
-}: SkeletonTableProps): JSX.Element {
+}: SkeletonTableProps) {
   return (
     <div
       className={cn('w-full space-y-3', className)}

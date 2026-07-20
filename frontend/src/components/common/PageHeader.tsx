@@ -35,7 +35,7 @@ export function PageHeader({
   breadcrumbs,
   actions,
   className,
-}: PageHeaderProps): JSX.Element {
+}: PageHeaderProps) {
   return (
     <header className={cn('app-page-header mb-6 flex flex-col gap-3', className)}>
       {breadcrumbs && breadcrumbs.length > 0 && (

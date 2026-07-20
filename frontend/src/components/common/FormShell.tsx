@@ -11,7 +11,7 @@ export interface FormShellProps {
   className?: string;
 }
 
-export function FormShell({ children, footer, className }: FormShellProps): JSX.Element {
+export function FormShell({ children, footer, className }: FormShellProps) {
   return (
     <div className={cn('space-y-6', className)}>
       <Card>
@@ -41,7 +41,7 @@ export function FormSection({
   description,
   children,
   className,
-}: FormSectionProps): JSX.Element {
+}: FormSectionProps) {
   return (
     <section className={cn('space-y-4 border-b pb-6 last:border-b-0 last:pb-0', className)}>
       <div>

@@ -28,7 +28,7 @@ export function ErrorState({
   error,
   onRetry,
   className,
-}: ErrorStateProps): JSX.Element {
+}: ErrorStateProps) {
   const { message, code, correlationId } = describe(error);
   return (
     <div

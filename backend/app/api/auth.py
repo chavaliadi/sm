@@ -20,7 +20,6 @@ from app.schemas.auth import (
     UserLogin,
     UserCreate,
     TokenPayload,
-    PermissionRead,
 )
 from app.services import auth as auth_service
 from app.services.audit import log_action
@@ -168,22 +167,5 @@ def get_users(
     )
 
 
-# ── GET /auth/permissions ────────────────────────────────────────────
-@router.get(
-    "/permissions",
-    response_model=PaginatedResponse[PermissionRead],
-    dependencies=[Depends(require_permission("MANAGE_USERS"))],
-)
-def get_permissions(
-    page: int = Query(default=1, ge=1),
-    page_size: int = Query(default=20, ge=1, le=100),
-    session: Session = Depends(get_session),
-):
-    permissions, total = auth_service.list_permissions(
-        session, page=page, page_size=page_size
-    )
-    return PaginatedResponse(
-        data=[PermissionRead.model_validate(p) for p in permissions],
-        meta=PaginationMeta(page=page, page_size=page_size, total=total),
-    )
+
 

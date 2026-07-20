@@ -46,7 +46,7 @@ export function ConfirmDialog({
   requireConfirmation,
   onConfirm,
   loading,
-}: ConfirmDialogProps): JSX.Element {
+}: ConfirmDialogProps) {
   const [typed, setTyped] = useState('');
   const isReady = !requireConfirmation || typed === requireConfirmation;
 

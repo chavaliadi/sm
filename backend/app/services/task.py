@@ -96,3 +96,15 @@ def soft_delete_task(session: Session, task_id: int) -> Task:
     session.commit()
     session.refresh(task)
     return task
+
+
+def create_task_for_dpr(session: Session, project_id: int, title: str, description: str) -> Task:
+    """Auto-create a task when a DPR is approved."""
+    task_in = TaskCreate(
+        project_id=project_id,
+        title=title,
+        description=description,
+        priority="HIGH",
+        status="TODO",
+    )
+    return create_task(session, task_in)

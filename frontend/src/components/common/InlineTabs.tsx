@@ -30,7 +30,7 @@ export function InlineTabs({
   paramName,
   className,
   listClassName,
-}: InlineTabsProps): JSX.Element {
+}: InlineTabsProps) {
   const [params, setParams] = useSearchParams();
   const initial = defaultValue ?? tabs[0]?.value ?? '';
   const active = paramName ? (params.get(paramName) ?? initial) : undefined;

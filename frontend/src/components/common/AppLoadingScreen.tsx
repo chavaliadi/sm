@@ -4,7 +4,7 @@
 
 import { Skeleton } from '@/components/ui/skeleton';
 
-export function AppLoadingScreen(): JSX.Element {
+export function AppLoadingScreen() {
   return (
     <div className="min-h-screen bg-slate-50 px-6 py-8" role="status" aria-label="Loading">
       <div className="mx-auto max-w-6xl space-y-8">

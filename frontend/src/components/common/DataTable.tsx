@@ -82,7 +82,7 @@ export function DataTable<T>({
   dense,
   stickyHeader,
   className,
-}: DataTableProps<T>): JSX.Element {
+}: DataTableProps<T>) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('asc');
 

@@ -20,6 +20,8 @@ from app.api.stakeholders import (
     meetings_router,
 )
 from app.api.notifications import router as notifications_router
+from app.api.studies import router as studies_router
+from app.api.evaluations import router as evaluations_router
 
 app = FastAPI(
     title="Sagarmala 2.0 Portal API",
@@ -97,6 +99,8 @@ app.include_router(tasks_router)
 app.include_router(stakeholders_router)
 app.include_router(meetings_router)
 app.include_router(notifications_router)
+app.include_router(studies_router)
+app.include_router(evaluations_router)
 
 
 @app.get("/")

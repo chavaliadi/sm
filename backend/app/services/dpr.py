@@ -137,6 +137,16 @@ def create_dpr(session: Session, project_id: int, actor_id: int) -> DPR:
             detail={"code": "NOT_FOUND", "message": "Project not found"},
         )
 
+    # Gate DPR creation on Evaluation recommendation
+    if project.lifecycle_stage != "cleared_for_dpr":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "LIFECYCLE_GATE",
+                "message": f"Project must be in 'cleared_for_dpr' stage to create a DPR. Current: {project.lifecycle_stage}",
+            },
+        )
+
     dpr = DPR(
         project_id=project_id,
         status=DPRStatus.DRAFT,
@@ -213,10 +223,15 @@ def smfcl_review(
         notif_title = "DPR Forwarded to Ministry"
         notif_msg = f"DPR #{dpr.id} has been recommended by SMFCL and forwarded to the Ministry for review."
     elif decision == "reject":
+        if not comment or not comment.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": "COMMENT_REQUIRED", "message": "A reason must be provided when rejecting a DPR."},
+            )
         target = DPRStatus.REJECTED_BY_SMFCL
         action = "SMFCL_REJECTED"
         notif_title = "DPR Rejected by SMFCL"
-        notif_msg = f"DPR #{dpr.id} has been rejected by SMFCL. Observations: {comment or 'N/A'}"
+        notif_msg = f"DPR #{dpr.id} has been rejected by SMFCL. Observations: {comment}"
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -246,11 +261,32 @@ def ministry_review(
         action = "MINISTRY_APPROVED"
         notif_title = "DPR Approved by Ministry"
         notif_msg = f"DPR #{dpr.id} has received final approval from the Ministry."
+
+        # Integration Phase 2 Task 1: Update project lifecycle stage
+        project = session.get(Project, dpr.project_id)
+        if project:
+            project.lifecycle_stage = "sanctioned"
+            project.updated_at = datetime.utcnow()
+            session.add(project)
+
+        # Integration Phase 2 Task 2: Auto-create Task on DPR Approval
+        from app.services.task import create_task_for_dpr
+        create_task_for_dpr(
+            session,
+            project_id=dpr.project_id,
+            title=f"Funds Disbursement — DPR #{dpr.id}",
+            description=f"Process fund release for approved DPR #{dpr.id}. Ministry approval received.",
+        )
     elif decision == "reject":
+        if not comment or not comment.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": "COMMENT_REQUIRED", "message": "A reason must be provided when rejecting a DPR."},
+            )
         target = DPRStatus.REJECTED_BY_MINISTRY
         action = "MINISTRY_REJECTED"
         notif_title = "DPR Rejected by Ministry"
-        notif_msg = f"DPR #{dpr.id} has been rejected by the Ministry. Reason: {comment or 'N/A'}"
+        notif_msg = f"DPR #{dpr.id} has been rejected by the Ministry. Reason: {comment}"
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -283,6 +319,13 @@ def release_funds(session: Session, dpr_id: int, actor_id: int, comment: Optiona
     """APPROVED → FUNDS_RELEASED. SMFCL marks funds released."""
     dpr = _get_active_dpr(session, dpr_id)
     dpr = _transition(session, dpr, DPRStatus.FUNDS_RELEASED, actor_id, "FUNDS_RELEASED", comment)
+
+    # Integration Phase 2 Task 1: Update project lifecycle stage again
+    project = session.get(Project, dpr.project_id)
+    if project:
+        project.lifecycle_stage = "funded"
+        project.updated_at = datetime.utcnow()
+        session.add(project)
 
     # Notify the submitter
     create_notification(

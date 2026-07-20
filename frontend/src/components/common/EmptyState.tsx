@@ -20,7 +20,7 @@ export function EmptyState({
   icon: Icon = Inbox,
   action,
   className,
-}: EmptyStateProps): JSX.Element {
+}: EmptyStateProps) {
   return (
     <div
       className={cn(

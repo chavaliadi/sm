@@ -24,7 +24,7 @@ export function FilterBar({
   onClear,
   children,
   className,
-}: FilterBarProps): JSX.Element {
+}: FilterBarProps) {
   const hasFilters = !!search || !!children;
   return (
     <div

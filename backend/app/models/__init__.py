@@ -1,4 +1,4 @@
-from app.models.auth import User, Role, Permission, RolePermission
+from app.models.auth import User, Role
 from app.models.project import Project
 from app.models.dpr import DPR, DPRAuditLog
 from app.models.task import Task

@@ -17,7 +17,7 @@ export interface DetailGridProps {
   className?: string;
 }
 
-export function DetailGrid({ fields, columns = 3, className }: DetailGridProps): JSX.Element {
+export function DetailGrid({ fields, columns = 3, className }: DetailGridProps) {
   const gridClass =
     columns === 2
       ? 'sm:grid-cols-2'
