@@ -6,7 +6,7 @@ from app.schemas.responses import (
     PaginationMeta,
 )
 from app.schemas.auth import UserRead
-from app.schemas.project import ProjectRead
+from app.schemas.project import ProjectRead, ProjectCreate, ProjectUpdate
 from app.schemas.dpr import DPRRead, DPRAuditLogRead
 from app.schemas.task import TaskRead
 from app.schemas.stakeholder import StakeholderRead, MeetingRead

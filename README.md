@@ -1,25 +1,25 @@
-# Sagarmala 2.0 Portal — MVP Project Plan & Scaffold
+# Sagarmala 2.0 Portal (MVP Project Plan and Scaffold)
 
-The **Sagarmala 2.0 Portal** is a full-stack web application designed for the Ministry of Ports, Shipping and Waterways (MoPSW) and the Sagarmala Development Company Limited (SMFCL) to manage, appraise, and approve port-led infrastructure projects. 
+The **Sagarmala 2.0 Portal** is a full stack web application designed for the Ministry of Ports, Shipping and Waterways (MoPSW) and the Sagarmala Development Company Limited (SMFCL) to manage, appraise, and approve port led infrastructure projects.
 
-This repository contains the working full-stack skeleton: **FastAPI backend** (SQLModel + PostgreSQL) + **Vite/React/TypeScript/Tailwind CSS** frontend, preloaded with the base database schema, standard API envelopes, global error handling, and scaffolded feature modules.
+This repository contains the working full stack application: **FastAPI backend** (SQLModel + PostgreSQL) + **Vite / React / TypeScript / Tailwind CSS** frontend, preloaded with the base database schema, standard API envelopes, global error handling, authentication, and feature modules.
 
 ---
 
-## 1. Project Context & Vision
+## 1. Project Context and Vision
 
 Sagarmala 2.0 is a flagship initiative of the Government of India under the **Viksit Bharat 2047** mission, focusing on port modernization, maritime industrialization, shipbuilding, coastal community development, multimodal connectivity, and sustainable maritime practices.
 
 The complete RFP describes a large system comprising 26+ modules, mobile apps, drone/satellite media integration, and PFMS integration.
 
-**Our 15–20 Day MVP Focuses on Phase I (Appraisal & Sanction) Only.**
-The goal of this MVP is to build a fully working, highly polished prototype of the core proposal and approval loop. It demonstrates the value proposition to the client by showing how a project proposal flows transparently across Port Authorities, SMFCL, and the Ministry, supported by a rigorous audit trail and real-time dashboard analytics.
+**Our 15 to 20 Day MVP Focuses on Phase I (Appraisal and Sanction) Only.**
+The goal of this MVP is to build a fully working, highly polished prototype of the core proposal and approval loop. It demonstrates the value proposition to the client by showing how a project proposal flows transparently across Port Authorities, SMFCL, and the Ministry, supported by a rigorous audit trail and real time dashboard analytics.
 
 ---
 
-## 2. Core Workflow & State Machine
+## 2. Core Workflow and State Machine
 
-The core feature of the portal is the **DPR (Detailed Project Report) Submission & Approval Workflow**. 
+The core feature of the portal is the **DPR (Detailed Project Report) Submission and Approval Workflow**. 
 A DPR transitions through the following states in a strict, audited state machine:
 
 ```mermaid
@@ -43,14 +43,14 @@ stateDiagram-v2
     APPROVED --> FUNDS_RELEASED : SMFCL marks funds released (completion)
 ```
 
-### Transition Integrity & Auditing
+### Transition Integrity and Auditing
 1. **Audit Logs:** Every status transition writes a row to the `dpr_audit_log` capturing the **actor, action, timestamp, and review comments**.
-2. **Immutability:** Once a DPR leaves the `DRAFT` state, it is read-only for the Port Authority. It cannot be deleted or modified outside of formal resubmission loops.
-3. **Soft Delete:** A DPR can only be soft-deleted (`is_active = false`) while it remains a `DRAFT`.
+2. **Immutability:** Once a DPR leaves the `DRAFT` state, it is read only for the Port Authority. It cannot be deleted or modified outside of formal resubmission loops.
+3. **Soft Delete:** A DPR can only be soft deleted (`is_active = false`) while it remains a `DRAFT`.
 
 ---
 
-## 3. Technology Stack & Architecture
+## 3. Technology Stack and Architecture
 
 The application implements a clean, decoupled **Layered Architecture** designed to scale:
 
@@ -76,48 +76,48 @@ The application implements a clean, decoupled **Layered Architecture** designed 
 ```
 
 ### Architectural Decisions (Locked per `DECISION_RULES.md`)
-*   **D1. No Repository Layer:** The backend layering is strictly `Route → Service → SQLModel Session`. Services talk to the database directly to minimize CRUD boilerplate.
-*   **D2. Soft Delete:** Business records (Projects, Tasks, Stakeholders, Meetings, DPRs) use `is_active: bool` rather than hard deletes. Audit trails are never deletable.
-*   **D3. Notifications are Backend-Only:** Scaffolding contains the `Notification` model, a service helper `create_notification()`, and `GET /notifications`. No frontend inbox/bell is built for the MVP.
-*   **D5. Permission-Based RBAC:** Routes are protected via `require_permission("PERMISSION_NAME")` evaluated dynamically against user roles, rather than hardcoded role string checks.
-*   **D7. API Contract Envelopes:** List responses return pagination metadata. Error responses return standard code-based structures:
-    *   **List Success:** `{ "data": [...], "meta": { "page": 1, "page_size": 20, "total": X } }`
-    *   **Detail Success:** `{ "data": {...}, "meta": {} }`
-    *   **Error:** `{ "error": { "code": "ERROR_CODE", "message": "Reason details", "field": null } }`
-*   **D11. Error Raising Convention:** Always raise `HTTPException` with a detail dictionary containing `"code"`, `"message"`, and `"field"` keys. Raw error strings are mapped to standard envelopes, but explicit error codes should be set.
-*   **D12. Secure Read Schemas:** API routes always return custom `*Read` schemas (e.g. `UserRead`, `ProjectRead`) rather than raw database models. This ensures sensitive properties like `password_hash` physically cannot leak to the frontend.
+* **D1. No Repository Layer:** The backend layering is strictly `Route -> Service -> SQLModel Session`. Services talk to the database directly to minimize CRUD boilerplate.
+* **D2. Soft Delete:** Business records (Projects, Tasks, Stakeholders, Meetings, DPRs) use `is_active: bool` rather than hard deletes. Audit trails are never deletable.
+* **D3. Notifications are Backend Only:** Scaffolding contains the `Notification` model, a service helper `create_notification()`, and `GET /notifications`. No frontend inbox/bell is built for the MVP.
+* **D5. Permission Based RBAC:** Routes are protected via `require_permission("PERMISSION_NAME")` evaluated dynamically against user roles, rather than hardcoded role string checks.
+* **D7. API Contract Envelopes:** List responses return pagination metadata. Error responses return standard code based structures:
+    * **List Success:** `{ "data": [...], "meta": { "page": 1, "page_size": 20, "total": X } }`
+    * **Detail Success:** `{ "data": {...}, "meta": {} }`
+    * **Error:** `{ "error": { "code": "ERROR_CODE", "message": "Reason details", "field": null } }`
+* **D11. Error Raising Convention:** Always raise `HTTPException` with a detail dictionary containing `"code"`, `"message"`, and `"field"` keys.
+* **D12. Secure Read Schemas:** API routes always return custom `*Read` schemas (such as `UserRead` or `ProjectRead`) rather than raw database models. This ensures sensitive properties like `password_hash` cannot leak to the frontend.
 
 ---
 
-## 4. MVP Modules & Team Responsibilities
+## 4. MVP Modules and Implementation Status
 
 Work is divided into 6 vertical slices. Each developer owns their module's frontend directories, API routes, database tables, and logic:
 
-| Module | Owner | Core Scope & Workflow |
-| :--- | :--- | :--- |
-| **1. Admin & Access Control (RBAC)** | **Adithya (Lead)** | User sign-in, JWT token issuance, dynamic permission validation, and user/role administration. |
-| **2. Project Configuration** | **Pragnya** | Setting up the project spine (`Project` model), categories, geographic mapping (states/ports), estimated costs, and lifecycle stage tracking. |
-| **3. DPR Submission & Approval** | **Shashank** | DPR lifecycle state machine, resubmission loops, version increments, and logging to the `dpr_audit_log` trail. |
-| **4. Task Management** | **Jayanth** | Creating, assigning, scheduling, and updating tasks (`Task` model) linked to projects. |
-| **5. Stakeholder & Meeting** | **Kavya (Integration Owner)** | Directory of external stakeholders and meeting minutes logger. Also owns the shared component library and demo `seed.py` script. |
-| **6. Dashboard / MIS** | **Adithya (Lead)** | Real-time analytical view with KPI cards, one project-by-stage bar chart, and one task-status pie chart (mocked on Day 5, wired to live data incrementally). |
+| Module | Owner | Core Scope & Workflow | Status |
+| :--- | :--- | :--- | :--- |
+| **1. Admin & Access Control (RBAC)** | **Adithya (Lead)** | User sign in, JWT token issuance, dynamic permission validation, user and role administration, plus `/login` page and `ProtectedRoute` route guard. | **Completed** |
+| **2. Project Configuration** | **Pragnya** | Setting up the project spine (`Project` model), categories, geographic mapping (states/ports), estimated costs, and lifecycle stage tracking. | **Backend Complete** |
+| **3. DPR Submission & Approval** | **Shashank** | DPR lifecycle state machine, resubmission loops, version increments, and logging to the `dpr_audit_log` trail. | **Pending** |
+| **4. Task Management** | **Jayanth** | Creating, assigning, scheduling, and updating tasks (`Task` model) linked to projects with `evidence_url` validation on completion. | **Completed** |
+| **5. Stakeholder & Meeting** | **Kavya (Integration Owner)** | Directory of external stakeholders and meeting minutes logger with project level query filtering. | **Completed** |
+| **6. Dashboard / MIS** | **Adithya (Lead)** | Real time analytical view with 4 KPI cards, one project count by stage bar chart, and one task status breakdown pie chart, wired to live API endpoints. | **Completed** |
 
 ---
 
-## 5. Git Workflow & Merge Safety Rules
+## 5. Git Workflow and Merge Safety Rules
 
 To keep the development pipeline stable, the team adheres to these rules:
 
-1.  **Branching Structure:** Branch from `develop` into `feature/<module-name>`. Never commit to `main` or `develop` directly. Raise PRs targeting the `develop` branch.
-2.  **Start-of-Day Rebase:** Pull/rebase the latest `develop` into your feature branch at the start of every work cycle to resolve conflicts early.
-3.  **Alembic Migration Safety (Rule D8):** 
-    *   **Juniors do not run `alembic revision`.** 
-    *   Juniors write/modify their SQLModel tables in `backend/app/models/` and commit them.
-    *   The **Senior Lead** is the only person who runs `alembic revision --autogenerate` and applies the migration when merging feature branches into `develop`. This prevents database migration forks and broken revision chains.
+1. **Branching Structure:** Branch from `develop` into `feature/<module-name>`. Never commit to `main` or `develop` directly. Raise PRs targeting the `develop` branch.
+2. **Start of Day Rebase:** Pull or rebase the latest `develop` into your feature branch at the start of every work cycle to resolve conflicts early.
+3. **Alembic Migration Safety (Rule D8):** 
+    * **Juniors do not run `alembic revision`.** 
+    * Juniors write or modify their SQLModel tables in `backend/app/models/` and commit them.
+    * The **Senior Lead** is the only person who runs `alembic revision --autogenerate` and applies the migration when merging feature branches into `develop`. This prevents database migration forks.
 
 ---
 
-## 6. Quickstart & Installation
+## 6. Quickstart and Installation
 
 Ensure you have Python 3.10+ and Node.js 18+ installed.
 
@@ -143,11 +143,11 @@ cp .env.example .env  # Update DATABASE_URL inside .env if needed
 # Run migrations to create database schema
 alembic upgrade head
 
-# Run development server
-uvicorn app.main:app --reload
+# Run development server using virtual environment python binary
+venv/bin/uvicorn app.main:app --reload
 ```
-*   **Swagger API Docs:** Available at http://localhost:8000/docs
-*   **Health Check:** http://localhost:8000/health returns `{"status":"ok"}`
+* **Swagger API Docs:** Available at http://localhost:8000/docs
+* **Health Check:** http://localhost:8000/health returns `{"status":"ok"}`
 
 ### Step 3: Frontend Setup
 ```bash
@@ -162,11 +162,26 @@ cp .env.example .env
 # Start dev server
 npm run dev
 ```
-*   **Vite Dev App:** http://localhost:5173
+* **Vite Dev App:** http://localhost:5173
 
 ---
 
-## 7. Codebase Folder Layout
+## 7. Authentication and Default Login Credentials
+
+Accessing any protected frontend route automatically redirects to `/login`.
+
+### Pre seeded Test Credentials
+
+| Role | Email | Password | Allowed Write Actions |
+| :--- | :--- | :--- | :--- |
+| **Admin** | `admin@sagarmala.gov.in` | `admin123` | Full access across all modules |
+| **Port Authority** | `port_authority@sagarmala.gov.in` | `password123` | Projects, Tasks, Stakeholders |
+| **SMFCL** | `smfcl@sagarmala.gov.in` | `password123` | Read only on Projects and Tasks (HTTP 403 on write) |
+| **Ministry** | `ministry@sagarmala.gov.in` | `password123` | Read only on Projects and Tasks (HTTP 403 on write) |
+
+---
+
+## 8. Codebase Folder Layout
 
 The project structure is organized by layer on the backend and by feature on the frontend:
 
@@ -179,7 +194,7 @@ SagarMala/
 │   │   ├── db/           # SQLModel connection session
 │   │   ├── models/       # SQLModel database tables
 │   │   ├── schemas/      # Pydantic validation and *Read schemas
-│   │   ├── services/     # Business logic & Database queries
+│   │   ├── services/     # Business logic and Database queries
 │   │   └── main.py       # FastAPI application entrypoint
 │   ├── alembic/          # Database migration version files
 │   ├── requirements.txt
@@ -187,14 +202,14 @@ SagarMala/
 │
 └── frontend/
     ├── src/
-    │   ├── api/          # Axios HTTP client stubs
-    │   ├── components/ui/# Reusable shadcn/ui elements
-    │   ├── features/     # Feature-grouped screens and assets
-    │   ├── layouts/      # Dashboard and global shell layout
-    │   ├── pages/        # Route-level pages
+    │   ├── api/          # Axios HTTP client helpers (auth, projects, tasks)
+    │   ├── components/   # ProtectedRoute guard and shared UI
+    │   ├── features/     # Feature grouped screens and assets
+    │   ├── layouts/      # Dashboard and global shell layout with Logout
+    │   ├── pages/        # Route level pages (HomePage, LoginPage, etc.)
     │   ├── routes/       # Central react-router routing table
     │   ├── types/        # TypeScript types (mirrors backend *Read schemas)
-    │   └── utils/        # Frontend formatting/helpers
+    │   └── utils/        # Frontend formatting helpers
     ├── package.json
     └── .env.example
 ```

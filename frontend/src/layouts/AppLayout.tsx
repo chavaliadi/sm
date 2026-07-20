@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { logoutUser } from "@/api/auth";
 import {
   Menu,
   X,
@@ -61,6 +62,11 @@ const navItems: NavItem[] = [
     icon: Users,
     href: "/stakeholders",
   },
+  {
+    label: "Meetings",
+    icon: Users,
+    href: "/meetings",
+  },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -74,9 +80,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     return location.pathname.startsWith(href);
   };
 
+  const navigate = useNavigate();
+
   const handleLogout = () => {
-    // Standard mock logout
-    console.log("Logging out...");
+    logoutUser();
+    navigate("/login", { replace: true });
   };
 
   // Modernized app layout shell consistent with ERP visual system
@@ -121,7 +129,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <Button variant="ghost" size="icon">
               <Settings className="h-5 w-5" />
             </Button>
-            
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2 px-2 hover:bg-slate-100 rounded-lg">
@@ -174,7 +182,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <X className="h-5 w-5" />
               </Button>
             </div>
-            
+
             <div className="hidden border-b border-white/10 p-4 lg:block">
               <div className="flex items-center gap-3">
                 <div className="app-brand-mark flex h-11 w-11 items-center justify-center rounded-xl">

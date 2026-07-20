@@ -1,10 +1,12 @@
 import { createBrowserRouter } from "react-router-dom";
 import { AppLayout } from "@/layouts/AppLayout";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { HomePage } from "@/pages/HomePage";
 import { ProjectsPage } from "@/pages/ProjectsPage";
 import { DprsPage } from "@/pages/DprsPage";
 import { TasksPage } from "@/pages/TasksPage";
 import { StakeholdersPage } from "@/pages/StakeholdersPage";
+import { MeetingsPage } from "@/pages/MeetingsPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { RegisterPage } from "@/pages/RegisterPage";
 
@@ -16,41 +18,61 @@ export const router = createBrowserRouter([
   {
     path: "/",
     element: (
-      <AppLayout>
-        <HomePage />
-      </AppLayout>
+      <ProtectedRoute>
+        <AppLayout>
+          <HomePage />
+        </AppLayout>
+      </ProtectedRoute>
     ),
   },
   {
     path: "/projects",
     element: (
-      <AppLayout>
-        <ProjectsPage />
-      </AppLayout>
+      <ProtectedRoute>
+        <AppLayout>
+          <ProjectsPage />
+        </AppLayout>
+      </ProtectedRoute>
     ),
   },
   {
     path: "/dprs",
     element: (
-      <AppLayout>
-        <DprsPage />
-      </AppLayout>
+      <ProtectedRoute>
+        <AppLayout>
+          <DprsPage />
+        </AppLayout>
+      </ProtectedRoute>
     ),
   },
   {
     path: "/tasks",
     element: (
-      <AppLayout>
-        <TasksPage />
-      </AppLayout>
+      <ProtectedRoute>
+        <AppLayout>
+          <TasksPage />
+        </AppLayout>
+      </ProtectedRoute>
     ),
   },
   {
     path: "/stakeholders",
     element: (
-      <AppLayout>
-        <StakeholdersPage />
-      </AppLayout>
+      <ProtectedRoute>
+        <AppLayout>
+          <StakeholdersPage />
+        </AppLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/meetings",
+    element: (
+      <ProtectedRoute>
+        <AppLayout>
+          <MeetingsPage />
+        </AppLayout>
+      </ProtectedRoute>
     ),
   },
   {
