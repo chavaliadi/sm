@@ -1,6 +1,7 @@
+import React from "react";
 import { Badge } from "@/components/ui/badge";
 
-interface StatusPillProps {
+export interface StatusPillProps {
   type?: "lifecycle" | "dpr" | "task" | "general" | string;
   status: string;
   size?: "sm" | "default" | "lg";
@@ -12,7 +13,7 @@ export function StatusPill({
   status,
   size = "sm",
   className = "",
-}: StatusPillProps) {
+}: StatusPillProps): React.ReactElement {
   const normalized = status ? status.toUpperCase().replace(/\s+/g, "_") : "UNKNOWN";
 
   let label = status || "Unknown";
@@ -122,4 +123,9 @@ export function StatusPill({
   );
 }
 
-export { StatusPill as StatusBadge };
+export const StatusBadge = StatusPill;
+export const ApplicationStatusBadge = StatusPill;
+export const AssetClassificationBadge = StatusPill;
+export const LoanAccountStatusBadge = StatusPill;
+export const EntityStatusBadge = StatusPill;
+export const RiskCategoryBadge = StatusPill;

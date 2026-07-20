@@ -18,6 +18,11 @@ export interface ApiErrorResponse {
   };
 }
 
+export interface SuccessResponse<T> {
+  data: T;
+  meta?: Record<string, unknown>;
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
   meta: {
@@ -26,6 +31,7 @@ export interface PaginatedResponse<T> {
     total: number;
   };
 }
+
 
 export interface UserRead {
   id: number;

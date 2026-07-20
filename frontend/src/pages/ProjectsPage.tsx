@@ -361,11 +361,12 @@ export function ProjectsPage() {
         onOpenChange={(open) => !open && setProjectToDelete(null)}
         title="Deactivate Project Record"
         description={`Are you sure you want to deactivate project "${projectToDelete?.name}" (${projectToDelete?.project_code})? This will soft-delete the project record.`}
-        confirmText="Deactivate Project"
-        confirmVariant="destructive"
+        confirmLabel="Deactivate Project"
+        variant="destructive"
         onConfirm={handleDeleteConfirm}
-        isLoading={deleting}
+        loading={deleting}
       />
+
     </div>
   );
 }
