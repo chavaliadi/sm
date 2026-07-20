@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router-dom";
 import { AppLayout } from "../layouts/AppLayout";
 import { HomePage } from "../pages/HomePage";
 import { LoginPage } from "../pages/LoginPage";
+import { ProjectsPage } from "../pages/ProjectsPage";
 import { StakeholdersPage } from "../pages/StakeholdersPage";
 import { MeetingsPage } from "../pages/MeetingsPage";
 import { TaskManagementPage } from "../features/tasks/TaskManagementPage";
@@ -22,6 +23,16 @@ export const router = createBrowserRouter([
       <ProtectedRoute>
         <AppLayout>
           <HomePage />
+        </AppLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/projects",
+    element: (
+      <ProtectedRoute>
+        <AppLayout>
+          <ProjectsPage />
         </AppLayout>
       </ProtectedRoute>
     ),
