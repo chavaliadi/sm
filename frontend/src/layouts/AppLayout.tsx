@@ -13,6 +13,7 @@ import {
   FileCheck,
   CheckSquare,
   Users,
+  CalendarDays,
   Anchor,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,11 @@ const navItems: NavItem[] = [
     icon: Users,
     href: "/stakeholders",
   },
+  {
+    label: "Meetings",
+    icon: CalendarDays,
+    href: "/meetings",
+  },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -75,14 +81,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   const handleLogout = () => {
-    // Standard mock logout
     console.log("Logging out...");
   };
 
-  // Modernized app layout shell consistent with ERP visual system
   return (
     <div className="app-shell flex h-screen flex-col overflow-hidden text-slate-900">
-      {/* Header - Fixed at top */}
+      {/* Header */}
       <header className="app-header z-30 flex-shrink-0 border-b">
         <div className="flex items-center gap-4 px-4 py-3 lg:px-6">
           <Button
@@ -160,7 +164,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           />
         )}
 
-        {/* Sidebar - Scrolls independently */}
+        {/* Sidebar */}
         <aside
           className={cn(
             "app-sidebar fixed left-0 top-0 z-50 h-full w-64 transform border-r transition-transform lg:static lg:z-auto lg:h-auto lg:w-64 lg:translate-x-0",
@@ -209,7 +213,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </aside>
 
-        {/* Main content - Scrolls independently */}
+        {/* Main content */}
         <main className="app-main flex-1 overflow-y-auto p-4 lg:p-6">
           {children}
         </main>

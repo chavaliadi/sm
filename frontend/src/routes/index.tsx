@@ -5,6 +5,7 @@ import { ProjectsPage } from "@/pages/ProjectsPage";
 import { DprsPage } from "@/pages/DprsPage";
 import { TasksPage } from "@/pages/TasksPage";
 import { StakeholdersPage } from "@/pages/StakeholdersPage";
+import { MeetingsPage } from "@/pages/MeetingsPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { RegisterPage } from "@/pages/RegisterPage";
 
@@ -50,6 +51,14 @@ export const router = createBrowserRouter([
     element: (
       <AppLayout>
         <StakeholdersPage />
+      </AppLayout>
+    ),
+  },
+  {
+    path: "/meetings",
+    element: (
+      <AppLayout>
+        <MeetingsPage />
       </AppLayout>
     ),
   },
