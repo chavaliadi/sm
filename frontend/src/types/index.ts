@@ -55,6 +55,33 @@ export interface ProjectRead {
   updated_at: string;
 }
 
+export interface ProjectCreate {
+  project_code: string;
+  name: string;
+  category: string;
+  state: string;
+  port_name: string;
+  stakeholder_info?: string | null;
+  funding_model: string;
+  estimated_cost: number;
+  approved_cost?: number | null;
+  lifecycle_stage?: string;
+}
+
+export interface ProjectUpdate {
+  project_code?: string;
+  name?: string;
+  category?: string;
+  state?: string;
+  port_name?: string;
+  stakeholder_info?: string | null;
+  funding_model?: string;
+  estimated_cost?: number;
+  approved_cost?: number | null;
+  lifecycle_stage?: string;
+  is_active?: boolean;
+}
+
 export interface DPRRead {
   id: number;
   project_id: number;

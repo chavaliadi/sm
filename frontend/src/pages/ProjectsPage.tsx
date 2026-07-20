@@ -1,229 +1,144 @@
-import { useEffect, useState, useMemo } from "react";
-import { Plus } from "lucide-react";
-import { getProjects } from "@/api/portal";
-import type { ProjectRead } from "@/types";
+import { useEffect, useState, useCallback } from "react";
+import { Plus, RefreshCw, Edit2, Trash2 } from "lucide-react";
+import { getProjects, createProject, updateProject, deleteProject } from "@/api/portal";
+import type { ProjectRead, ProjectCreate, ProjectUpdate } from "@/types";
 import { PageHeader } from "@/components/common/PageHeader";
 import { AmountDisplay } from "@/components/common/AmountDisplay";
 import { DataTable, type Column } from "@/components/common/DataTable";
 import { StatusPill } from "@/components/common/StatusPill";
 import { FilterBar } from "@/components/common/FilterBar";
+import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-
-// Fallback data if backend is empty
-const fallbackProjects: ProjectRead[] = [
-  {
-    id: 1,
-    project_code: "SG-2026-001",
-    name: "VPT Berth Modernization Phase II",
-    category: "Port Modernization",
-    state: "Andhra Pradesh",
-    port_name: "Visakhapatnam Port",
-    stakeholder_info: "Chief Engineer S. K. Murthy (sk.murthy@vpt.gov.in)",
-    funding_model: "MoPSW Grant-in-aid",
-    estimated_cost: 120.5,
-    approved_cost: 115.0,
-    lifecycle_stage: "UNDER_EXECUTION",
-    is_active: true,
-    created_by: 1,
-    updated_by: 1,
-    created_at: "2026-07-01T12:00:00Z",
-    updated_at: "2026-07-15T15:30:00Z"
-  },
-  {
-    id: 2,
-    project_code: "SG-2026-002",
-    name: "JNPT Outer Harbor Dredging",
-    category: "Port Modernization",
-    state: "Maharashtra",
-    port_name: "Jawaharlal Nehru Port",
-    stakeholder_info: "GM Plg M. D. Kamdar (kamdar@jnpt.gov.in)",
-    funding_model: "MoPSW Grant-in-aid",
-    estimated_cost: 450.0,
-    approved_cost: null,
-    lifecycle_stage: "APPRAISAL",
-    is_active: true,
-    created_by: 1,
-    updated_by: 1,
-    created_at: "2026-07-02T09:15:00Z",
-    updated_at: "2026-07-16T11:45:00Z"
-  },
-  {
-    id: 3,
-    project_code: "SG-2026-003",
-    name: "Kolkata Port Multimodal Terminal",
-    category: "Connectivity Infrastructure",
-    state: "West Bengal",
-    port_name: "Kolkata Port",
-    stakeholder_info: "Deputy Chairman Amitava Ghose (aghose@kopt.gov.in)",
-    funding_model: "MoPSW Grant-in-aid",
-    estimated_cost: 85.0,
-    approved_cost: 85.0,
-    lifecycle_stage: "SANCTIONED",
-    is_active: true,
-    created_by: 1,
-    updated_by: 1,
-    created_at: "2026-07-03T10:00:00Z",
-    updated_at: "2026-07-17T14:20:00Z"
-  },
-  {
-    id: 4,
-    project_code: "SG-2026-004",
-    name: "Coopted Ro-Ro Service Channel",
-    category: "Coastal Shipping",
-    state: "Kerala",
-    port_name: "Cochin Port",
-    stakeholder_info: "Operations Lead V. A. Joseph",
-    funding_model: "MoPSW Grant-in-aid",
-    estimated_cost: 45.0,
-    approved_cost: null,
-    lifecycle_stage: "INITIATION",
-    is_active: true,
-    created_by: 1,
-    updated_by: 1,
-    created_at: "2026-07-04T14:30:00Z",
-    updated_at: "2026-07-18T16:10:00Z"
-  },
-  {
-    id: 5,
-    project_code: "SG-2026-005",
-    name: "Chennai Port-Maduravoyal Expressway Link",
-    category: "Connectivity Infrastructure",
-    state: "Tamil Nadu",
-    port_name: "Chennai Port",
-    stakeholder_info: "Under Secretary P. J. Rao (pj.rao@mopsw.gov.in)",
-    funding_model: "MoPSW Grant-in-aid",
-    estimated_cost: 320.0,
-    approved_cost: 320.0,
-    lifecycle_stage: "UNDER_EXECUTION",
-    is_active: true,
-    created_by: 1,
-    updated_by: 1,
-    created_at: "2026-07-05T08:45:00Z",
-    updated_at: "2026-07-19T10:30:00Z"
-  },
-  {
-    id: 6,
-    project_code: "SG-2026-006",
-    name: "Paradip Coal Berth Mechanization",
-    category: "Port Modernization",
-    state: "Odisha",
-    port_name: "Paradip Port",
-    stakeholder_info: "Lead Inspector K. G. Mohapatra",
-    funding_model: "MoPSW Grant-in-aid",
-    estimated_cost: 180.0,
-    approved_cost: 180.0,
-    lifecycle_stage: "COMPLETED",
-    is_active: true,
-    created_by: 1,
-    updated_by: 1,
-    created_at: "2026-07-06T11:00:00Z",
-    updated_at: "2026-07-19T12:00:00Z"
-  },
-  {
-    id: 7,
-    project_code: "SG-2026-007",
-    name: "Deendayal Port Smart Industrial Zone",
-    category: "Port-led Industrialization",
-    state: "Gujarat",
-    port_name: "Deendayal Port",
-    stakeholder_info: "Consultant Rajiv Mehta",
-    funding_model: "MoPSW Grant-in-aid",
-    estimated_cost: 250.0,
-    approved_cost: null,
-    lifecycle_stage: "INITIATION",
-    is_active: true,
-    created_by: 1,
-    updated_by: 1,
-    created_at: "2026-07-07T09:00:00Z",
-    updated_at: "2026-07-19T09:00:00Z"
-  },
-  {
-    id: 8,
-    project_code: "SG-2026-008",
-    name: "Tuticorin Outer Harbor Expansion",
-    category: "Port Modernization",
-    state: "Tamil Nadu",
-    port_name: "V.O. Chidambaranar Port",
-    stakeholder_info: "Port Director T. Srinivas",
-    funding_model: "MoPSW Grant-in-aid",
-    estimated_cost: 600.0,
-    approved_cost: null,
-    lifecycle_stage: "APPRAISAL",
-    is_active: true,
-    created_by: 1,
-    updated_by: 1,
-    created_at: "2026-07-08T10:00:00Z",
-    updated_at: "2026-07-19T10:00:00Z"
-  }
-];
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { ProjectFormDialog } from "@/features/projects/ProjectFormDialog";
+import { ProjectDetailsDialog } from "@/features/projects/ProjectDetailsDialog";
 
 export function ProjectsPage() {
   const [projects, setProjects] = useState<ProjectRead[]>([]);
+  const [totalProjects, setTotalProjects] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(20);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [search, setSearch] = useState("");
-  const [selectedProject, setSelectedProject] = useState<ProjectRead | null>(null);
 
-  const fetchProjects = () => {
+  // Filters
+  const [search, setSearch] = useState("");
+  const [activeStageTab, setActiveStageTab] = useState("ALL");
+  const [categoryFilter, setCategoryFilter] = useState("ALL");
+
+  // Modals state
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [projectToEdit, setProjectToEdit] = useState<ProjectRead | null>(null);
+  const [projectToView, setProjectToView] = useState<ProjectRead | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<ProjectRead | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const fetchProjects = useCallback(() => {
     setLoading(true);
-    getProjects()
+    setError(null);
+
+    const params: {
+      page: number;
+      page_size: number;
+      search?: string;
+      category?: string;
+      lifecycle_stage?: string;
+    } = {
+      page,
+      page_size: pageSize,
+    };
+
+    if (search.trim()) {
+      params.search = search.trim();
+    }
+    if (categoryFilter !== "ALL") {
+      params.category = categoryFilter;
+    }
+    if (activeStageTab !== "ALL") {
+      params.lifecycle_stage = activeStageTab;
+    }
+
+    getProjects(params)
       .then((res) => {
-        if (res.data && res.data.length > 0) {
-          setProjects(res.data);
-        } else {
-          setProjects(fallbackProjects);
-        }
+        setProjects(res.data || []);
+        setTotalProjects(res.meta?.total || 0);
         setError(null);
       })
       .catch((err) => {
-        console.error("Error loading projects:", err);
-        setProjects(fallbackProjects);
-        setError(null);
+        console.error("Failed to load projects:", err);
+        setError(err);
       })
       .finally(() => {
         setLoading(false);
       });
-  };
+  }, [page, pageSize, search, categoryFilter, activeStageTab]);
 
   useEffect(() => {
     fetchProjects();
-  }, []);
+  }, [fetchProjects]);
 
-  const filteredProjects = useMemo(() => {
-    return projects.filter((p) => {
-      const query = search.toLowerCase();
-      return (
-        p.name.toLowerCase().includes(query) ||
-        p.project_code.toLowerCase().includes(query) ||
-        p.port_name.toLowerCase().includes(query) ||
-        p.state.toLowerCase().includes(query) ||
-        p.category.toLowerCase().includes(query)
-      );
-    });
-  }, [projects, search]);
+  // Handlers
+  const handleCreateOpen = () => {
+    setProjectToEdit(null);
+    setIsFormOpen(true);
+  };
+
+  const handleEditOpen = (project: ProjectRead) => {
+    setProjectToEdit(project);
+    setIsFormOpen(true);
+  };
+
+  const handleFormSubmit = async (data: ProjectCreate | ProjectUpdate) => {
+    if (projectToEdit) {
+      await updateProject(projectToEdit.id, data as ProjectUpdate);
+    } else {
+      await createProject(data as ProjectCreate);
+    }
+    fetchProjects();
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!projectToDelete) return;
+    setDeleting(true);
+    try {
+      await deleteProject(projectToDelete.id);
+      setProjectToDelete(null);
+      fetchProjects();
+    } catch (err) {
+      console.error("Failed to delete project:", err);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const columns: Column<ProjectRead>[] = [
     {
       key: "project_code",
       header: "Code",
       sortable: true,
-      render: (project) => <span className="font-mono text-xs font-semibold text-slate-500">{project.project_code}</span>,
+      render: (project) => (
+        <span className="font-mono text-xs font-semibold text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+          {project.project_code}
+        </span>
+      ),
     },
     {
       key: "name",
-      header: "Project",
+      header: "Project Profile",
       sortable: true,
       render: (project) => (
         <div>
-          <div className="font-semibold text-slate-800">{project.name}</div>
-          <div className="text-xs text-slate-400">{project.category}</div>
+          <div className="font-semibold text-slate-800 hover:text-blue-600 transition-colors">
+            {project.name}
+          </div>
+          <div className="text-xs text-slate-400 font-medium">{project.category}</div>
         </div>
       ),
     },
     {
       key: "port_name",
-      header: "Port / State",
+      header: "Port & Location",
       render: (project) => (
         <div>
           <div className="font-medium text-slate-700">{project.port_name}</div>
@@ -236,19 +151,21 @@ export function ProjectsPage() {
       header: "Est. Cost",
       align: "right",
       render: (project) => (
-        <span className="font-medium">
-          <AmountDisplay amount={project.estimated_cost} /> Cr
+        <span className="font-medium text-slate-700">
+          ₹<AmountDisplay amount={project.estimated_cost} /> Cr
         </span>
       ),
     },
     {
       key: "approved_cost",
-      header: "Appr. Cost",
+      header: "Sanctioned Cost",
       align: "right",
       render: (project) => (
         <span className="font-medium">
           {project.approved_cost ? (
-            <span><AmountDisplay amount={project.approved_cost} /> Cr</span>
+            <span className="text-emerald-600">
+              ₹<AmountDisplay amount={project.approved_cost} /> Cr
+            </span>
           ) : (
             <span className="text-slate-300">-</span>
           )}
@@ -258,117 +175,219 @@ export function ProjectsPage() {
     {
       key: "lifecycle_stage",
       header: "Lifecycle Stage",
-      render: (project) => <StatusPill type="lifecycle" status={project.lifecycle_stage} size="sm" />,
+      render: (project) => (
+        <StatusPill type="lifecycle" status={project.lifecycle_stage} size="sm" />
+      ),
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      align: "right",
+      render: (project) => (
+        <div
+          className="flex items-center justify-end gap-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+            onClick={() => handleEditOpen(project)}
+            title="Edit Project"
+          >
+            <Edit2 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"
+            onClick={() => setProjectToDelete(project)}
+            title="Deactivate Project"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
     },
   ];
 
-  // Improved table responsiveness and look for consistency
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Project Management Spine"
-        subtitle="Manage the base port-led infrastructure profiles, lifecycle status, port mapping, and appraisal stages."
+        title="Project Configuration & Lifecycle"
+        subtitle="Manage base port-led infrastructure project profiles, category classification, funding models, and lifecycle progression."
         breadcrumbs={[{ label: "Projects" }]}
         actions={
-          <Button className="cursor-pointer">
-            <Plus className="mr-2 h-4 w-4" />
-            New Project
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="border-slate-200 hover:bg-slate-50 cursor-pointer"
+              onClick={fetchProjects}
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh
+            </Button>
+            <Button className="cursor-pointer" onClick={handleCreateOpen}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Project
+            </Button>
+          </div>
         }
       />
 
-      <FilterBar
-        search={search}
-        onSearchChange={setSearch}
-        searchPlaceholder="Search project code, name, category, state, port..."
-        onClear={() => setSearch("")}
+      {/* Summary KPI Cards */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <KPIItem
+          title="Total Projects"
+          value={totalProjects.toString()}
+          subtitle="Registered in portal"
+        />
+        <KPIItem
+          title="Appraisal Stage"
+          value={projects.filter((p) => p.lifecycle_stage === "APPRAISAL").length.toString()}
+          subtitle="Under review"
+        />
+        <KPIItem
+          title="Sanctioned"
+          value={projects.filter((p) => p.lifecycle_stage === "SANCTIONED").length.toString()}
+          subtitle="Approved for release"
+        />
+        <KPIItem
+          title="Under Execution"
+          value={projects.filter((p) => p.lifecycle_stage === "UNDER_EXECUTION").length.toString()}
+          subtitle="Construction phase"
+        />
+      </div>
+
+      <div className="flex flex-col gap-4">
+        {/* Tabs for Stage Filtering */}
+        <div className="flex items-center justify-between border-b border-slate-200">
+          <Tabs
+            value={activeStageTab}
+            onValueChange={(val) => {
+              setActiveStageTab(val);
+              setPage(1);
+            }}
+            className="w-full max-w-2xl overflow-x-auto"
+          >
+            <TabsList className="bg-slate-100/60 p-1 flex gap-1 rounded-xl">
+              <TabsTrigger value="ALL" className="cursor-pointer text-xs font-semibold">
+                All Projects
+              </TabsTrigger>
+              <TabsTrigger value="INITIATION" className="cursor-pointer text-xs font-semibold">
+                Initiation
+              </TabsTrigger>
+              <TabsTrigger value="APPRAISAL" className="cursor-pointer text-xs font-semibold">
+                Appraisal
+              </TabsTrigger>
+              <TabsTrigger value="SANCTIONED" className="cursor-pointer text-xs font-semibold">
+                Sanctioned
+              </TabsTrigger>
+              <TabsTrigger value="UNDER_EXECUTION" className="cursor-pointer text-xs font-semibold">
+                Execution
+              </TabsTrigger>
+              <TabsTrigger value="COMPLETED" className="cursor-pointer text-xs font-semibold">
+                Completed
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {/* Category Filter */}
+          <select
+            className="h-9 px-3 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer shrink-0"
+            value={categoryFilter}
+            onChange={(e) => {
+              setCategoryFilter(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="ALL">All Categories</option>
+            <option value="Port Modernization">Port Modernization</option>
+            <option value="Connectivity Infrastructure">Connectivity Infrastructure</option>
+            <option value="Coastal Shipping">Coastal Shipping</option>
+            <option value="Port-led Industrialization">Port-led Industrialization</option>
+            <option value="Coastal Community Development">Coastal Community Development</option>
+          </select>
+        </div>
+
+        {/* Filter / Search Bar */}
+        <FilterBar
+          search={search}
+          onSearchChange={(val) => {
+            setSearch(val);
+            setPage(1);
+          }}
+          searchPlaceholder="Search project code, name, category, state, port..."
+          onClear={() => {
+            setSearch("");
+            setPage(1);
+          }}
+        />
+
+        {/* Data Table */}
+        <DataTable
+          data={projects}
+          columns={columns}
+          getRowId={(project) => String(project.id)}
+          isLoading={loading}
+          error={error}
+          onRetry={fetchProjects}
+          emptyTitle="No projects found"
+          emptySubtitle="No project records match the current filter or search criteria."
+          onRowClick={(project) => setProjectToView(project)}
+        />
+      </div>
+
+      {/* Guided Creation / Edit Dialog */}
+      <ProjectFormDialog
+        open={isFormOpen}
+        onOpenChange={setIsFormOpen}
+        projectToEdit={projectToEdit}
+        onSubmit={handleFormSubmit}
       />
 
-      <DataTable
-        data={filteredProjects}
-        columns={columns}
-        getRowId={(project) => String(project.id)}
-        isLoading={loading}
-        error={error}
-        onRetry={fetchProjects}
-        emptyTitle="No projects match query"
-        emptySubtitle="Check filters or search query and try again."
-        onRowClick={(project) => setSelectedProject(project)}
+      {/* Details View Dialog */}
+      <ProjectDetailsDialog
+        open={!!projectToView}
+        onOpenChange={(open) => !open && setProjectToView(null)}
+        project={projectToView}
+        onEdit={(p) => handleEditOpen(p)}
+        onDelete={(p) => setProjectToDelete(p)}
       />
 
-      {/* Details dialog to view detailed project profile */}
-      <Dialog open={!!selectedProject} onOpenChange={() => setSelectedProject(null)}>
-        {selectedProject && (
-          <DialogContent className="max-w-xl bg-white border border-slate-200 shadow-xl rounded-2xl">
-            <DialogHeader>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="font-mono text-xs font-semibold px-2 py-0.5 bg-slate-100 rounded text-slate-500">
-                  {selectedProject.project_code}
-                </span>
-                <StatusPill type="lifecycle" status={selectedProject.lifecycle_stage} size="sm" />
-              </div>
-              <DialogTitle className="text-xl font-bold text-slate-800">{selectedProject.name}</DialogTitle>
-              <DialogDescription className="text-sm text-slate-500">
-                Detailed profile summary and allocation metrics.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="mt-4 space-y-4 text-sm">
-              <div className="grid grid-cols-2 gap-4 border-b border-slate-100 pb-3">
-                <div>
-                  <span className="block text-xs font-semibold text-slate-400">CATEGORY</span>
-                  <span className="font-medium text-slate-700">{selectedProject.category}</span>
-                </div>
-                <div>
-                  <span className="block text-xs font-semibold text-slate-400">FUNDING MODEL</span>
-                  <span className="font-medium text-slate-700">{selectedProject.funding_model}</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 border-b border-slate-100 pb-3">
-                <div>
-                  <span className="block text-xs font-semibold text-slate-400">PORT AUTHORITY</span>
-                  <span className="font-medium text-slate-700">{selectedProject.port_name}</span>
-                </div>
-                <div>
-                  <span className="block text-xs font-semibold text-slate-400">STATE / GEOGRAPHY</span>
-                  <span className="font-medium text-slate-700">{selectedProject.state}</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 border-b border-slate-100 pb-3">
-                <div>
-                  <span className="block text-xs font-semibold text-slate-400">ESTIMATED INVESTMENT</span>
-                  <span className="font-semibold text-slate-800">
-                    ₹<AmountDisplay amount={selectedProject.estimated_cost} /> Cr
-                  </span>
-                </div>
-                <div>
-                  <span className="block text-xs font-semibold text-slate-400">APPROVED SANCTION</span>
-                  <span className="font-semibold text-emerald-600">
-                    {selectedProject.approved_cost ? (
-                      <span>₹<AmountDisplay amount={selectedProject.approved_cost} /> Cr</span>
-                    ) : (
-                      <span className="text-slate-400 font-normal">Pending Approval</span>
-                    )}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <span className="block text-xs font-semibold text-slate-400">STAKEHOLDER CONTACT</span>
-                <span className="font-medium text-slate-700">{selectedProject.stakeholder_info || "No stakeholder mapped"}</span>
-              </div>
-
-              <div className="pt-2 flex justify-end">
-                <Button variant="outline" className="border-slate-200 hover:bg-slate-50 cursor-pointer" onClick={() => setSelectedProject(null)}>
-                  Close Details
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        )}
-      </Dialog>
+      {/* Confirm Soft Deletion Dialog */}
+      <ConfirmDialog
+        open={!!projectToDelete}
+        onOpenChange={(open) => !open && setProjectToDelete(null)}
+        title="Deactivate Project Record"
+        description={`Are you sure you want to deactivate project "${projectToDelete?.name}" (${projectToDelete?.project_code})? This will soft-delete the project record.`}
+        confirmText="Deactivate Project"
+        confirmVariant="destructive"
+        onConfirm={handleDeleteConfirm}
+        isLoading={deleting}
+      />
     </div>
+  );
+}
+
+function KPIItem({
+  title,
+  value,
+  subtitle,
+}: {
+  title: string;
+  value: string;
+  subtitle: string;
+}) {
+  return (
+    <Card className="bg-white border-0 shadow-sm rounded-xl">
+      <CardContent className="p-4">
+        <span className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          {title}
+        </span>
+        <span className="text-2xl font-bold text-slate-800 mt-1 block">{value}</span>
+        <span className="text-[11px] text-slate-400 mt-0.5 block">{subtitle}</span>
+      </CardContent>
+    </Card>
   );
 }

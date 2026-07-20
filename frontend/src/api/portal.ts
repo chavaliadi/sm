@@ -2,6 +2,8 @@ import { apiClient } from "./client";
 import type {
   PaginatedResponse,
   ProjectRead,
+  ProjectCreate,
+  ProjectUpdate,
   DPRRead,
   TaskRead,
   StakeholderRead,
@@ -11,10 +13,40 @@ import type {
   SuccessResponse,
 } from "@/types";
 
-export async function getProjects(): Promise<PaginatedResponse<ProjectRead>> {
-  const response = await apiClient.get<PaginatedResponse<ProjectRead>>("/projects");
+export interface GetProjectsParams {
+  page?: number;
+  page_size?: number;
+  search?: string;
+  category?: string;
+  state?: string;
+  lifecycle_stage?: string;
+}
+
+export async function getProjects(params?: GetProjectsParams): Promise<PaginatedResponse<ProjectRead>> {
+  const response = await apiClient.get<PaginatedResponse<ProjectRead>>("/projects", { params });
   return response.data;
 }
+
+export async function getProjectById(id: number): Promise<SuccessResponse<ProjectRead>> {
+  const response = await apiClient.get<SuccessResponse<ProjectRead>>(`/projects/${id}`);
+  return response.data;
+}
+
+export async function createProject(data: ProjectCreate): Promise<SuccessResponse<ProjectRead>> {
+  const response = await apiClient.post<SuccessResponse<ProjectRead>>("/projects", data);
+  return response.data;
+}
+
+export async function updateProject(id: number, data: ProjectUpdate): Promise<SuccessResponse<ProjectRead>> {
+  const response = await apiClient.put<SuccessResponse<ProjectRead>>(`/projects/${id}`, data);
+  return response.data;
+}
+
+export async function deleteProject(id: number): Promise<SuccessResponse<ProjectRead>> {
+  const response = await apiClient.delete<SuccessResponse<ProjectRead>>(`/projects/${id}`);
+  return response.data;
+}
+
 
 export async function getDprs(): Promise<PaginatedResponse<DPRRead>> {
   const response = await apiClient.get<PaginatedResponse<DPRRead>>("/dpr");
