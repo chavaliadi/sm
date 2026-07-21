@@ -98,6 +98,8 @@ export interface DPRAuditLogRead {
   dpr_id: number;
   actor_id: number;
   action: string;
+  old_status?: string | null;
+  new_status?: string | null;
   comment: string | null;
   timestamp: string;
 }

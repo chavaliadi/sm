@@ -3,6 +3,7 @@ import { AppLayout } from "../layouts/AppLayout";
 import { HomePage } from "../pages/HomePage";
 import { LoginPage } from "../pages/LoginPage";
 import { ProjectsPage } from "../pages/ProjectsPage";
+import { DprsPage } from "../pages/DprsPage";
 import { StakeholdersPage } from "../pages/StakeholdersPage";
 import { MeetingsPage } from "../pages/MeetingsPage";
 import { TaskManagementPage } from "../features/tasks/TaskManagementPage";
@@ -33,6 +34,16 @@ export const router = createBrowserRouter([
       <ProtectedRoute>
         <AppLayout>
           <ProjectsPage />
+        </AppLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/dprs",
+    element: (
+      <ProtectedRoute>
+        <AppLayout>
+          <DprsPage />
         </AppLayout>
       </ProtectedRoute>
     ),
