@@ -84,7 +84,8 @@ Error:      { "error": { "code", "message", "field" } }
 **Rationale:** Four modules independently inventing four response shapes is
 the single biggest source of integration pain on a multi-junior team.
 **Do NOT:** invent a different response shape, error format, or pagination
-style for a new endpoint — match this exactly.
+style for a new endpoint — match this exactly. This applies to Phase 2's
+4 new modules identically to Phase 1's 6.
 
 ### D8. Only one person runs Alembic migrations
 
@@ -97,14 +98,19 @@ chain heads that are painful to fix by hand — much worse than a normal code
 merge conflict.
 **Do NOT:** run `alembic revision --autogenerate` on a feature branch. An
 agent helping a junior should write/update the SQLModel model and stop
-there.
+there. In Phase 2, this migration is run **once, after all 4 new modules'
+models have landed on `develop`** — not once per module — since the sprint
+treats the schema freeze as a batch, not four separate migrations.
 
 ### D9. Git flow: `main ← develop ← feature/*`
 
 **Decision:** Nobody merges directly into `main`. Feature branches merge into
 `develop`; `develop` merges into `main` only at integration checkpoints.
 **Rationale:** Keeps `main` release-ready at all times.
-**Do NOT:** commit or open a PR directly against `main`.
+**Do NOT:** commit or open a PR directly against `main`. `main` was last
+promoted at the Phase 1 completion checkpoint (tag `phase1-mvp-complete`);
+the next promotion happens at Phase 2's own stable checkpoint, not
+continuously during the sprint.
 
 ### D10. TypeScript, strict-ish
 
@@ -115,7 +121,9 @@ gets a compile error immediately instead of a silent runtime failure
 discovered during the demo.
 **Do NOT:** use `any` to silence a type error — fix the actual mismatch, or
 ask if the shared type needs updating (and update it in `src/types/`, not
-just locally in one file).
+just locally in one file). `src/types/index.ts` is a frozen/shared file in
+Phase 2 (D13) — module owners tell the Integration Lead what needs adding,
+they don't edit it directly.
 
 ### D11. Error raising convention
 
@@ -128,6 +136,41 @@ just locally in one file).
 **Decision:** Every route returns a Pydantic `*Read` schema (`UserRead`, `ProjectRead`, etc.), never the raw SQLModel table object.
 **Rationale:** `User` includes `password_hash`. If a route ever returns the raw model instead of a schema that explicitly excludes it, the hash leaks to the browser — this makes that a type/schema mismatch instead of something that depends on someone remembering not to do it.
 **Do NOT:** return a raw SQLModel object from any route. Always construct the `*Read` schema explicitly.
+
+### D13. Phase 2: Integration Lead is the sole editor of shared/frozen files
+
+**Decision:** For the Phase 2 sprint, one person (Adithya, Integration Lead)
+is the only one who edits: `backend/app/main.py`, `backend/app/api/router.py`,
+`backend/app/core/permissions.py`, `backend/alembic/`, `backend/seed.py`,
+`frontend/src/layouts/`, `frontend/src/pages/HomePage.tsx` (Dashboard),
+`frontend/src/routes/index.tsx`, `frontend/src/components/ui/`,
+`frontend/src/types/index.ts`. The Integration Lead carries no feature
+module of their own this sprint specifically so this is a realistic
+workload, not an additional burden on top of a module.
+**Rationale:** Phase 1 repeatedly hit merge conflicts on exactly these files
+(`AppLayout.tsx`, `routes/index.tsx`) when multiple module owners edited
+them independently in parallel. Routing an edit through one person removes
+the conflict at its source instead of resolving it after the fact.
+**Do NOT:** have a module owner add their own sidebar link, route
+registration, router import, permission string, or migration directly.
+Tell the Integration Lead what's needed; they make the edit.
+
+### D14. Phase 2 cross-module dependencies use foreign keys, agreed at Day 1 freeze
+
+**Decision:** Module 4 (Contract & Work Order Management) depends on Module
+2's (Tendering & Bid Management) tender-award output. The dependency is a
+foreign key (`tender_id`) and an agreed payload shape, decided together at
+the Phase 2 Day 1 schema freeze — not discovered mid-sprint. If Module 2
+isn't ready when Module 4 needs it, Module 4 builds and tests against a
+stubbed `tender_id` rather than staying idle.
+**Rationale:** Same principle as D1/Section 5 of `DEVELOPMENT_RULES.md`
+(cross-module relationships use FK IDs only, never direct imports of
+another module's service/model code) — made explicit here because this is
+the one dependency chain in Phase 2 that can silently block a whole
+module if the handoff shape isn't nailed down in advance.
+**Do NOT:** let Module 4 import Module 2's service or model code directly.
+Do NOT let the `tender_id`/award payload shape change without telling the
+other module's owner.
 
 ---
 
