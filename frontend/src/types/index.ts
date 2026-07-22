@@ -175,3 +175,52 @@ export interface NotificationRead {
   created_at: string;
 }
 
+export interface TenderRead {
+  id: number;
+  project_id: number;
+  tender_code: string;
+  title: string;
+  status: string;
+  created_by: number;
+  updated_by: number | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TenderCreate {
+  project_id: number;
+  tender_code: string;
+  title: string;
+}
+
+export interface TenderUpdate {
+  title?: string;
+  status?: string;
+}
+
+export interface BidRead {
+  id: number;
+  tender_id: number;
+  bidder_name: string;
+  technical_score?: number | null;
+  financial_amount?: number | null;
+  status: string;
+  created_by: number;
+  updated_by: number | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BidCreate {
+  tender_id: number;
+  bidder_name: string;
+}
+
+export interface BidUpdate {
+  bidder_name?: string;
+  technical_score?: number | null;
+  financial_amount?: number | null;
+  status?: string;
+}

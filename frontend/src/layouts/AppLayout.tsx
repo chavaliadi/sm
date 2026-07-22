@@ -54,6 +54,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
               Stakeholders
             </Link>
             <Link
+              to="/tenders"
+              className="block rounded-md px-2 py-1.5 font-medium hover:bg-gray-100 hover:text-gray-900"
+            >
+              Tenders & Bids
+            </Link>
+            <Link
               to="/meetings"
               className="block rounded-md px-2 py-1.5 font-medium hover:bg-gray-100 hover:text-gray-900"
             >
