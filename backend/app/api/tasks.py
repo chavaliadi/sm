@@ -44,9 +44,19 @@ def get_tasks(
 def create_task(
     body: TaskCreate,
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
     _: object = Depends(require_permission("MANAGE_TASKS")),
 ):
     task = task_service.create_task(session, body)
+    log_action(
+        session,
+        user_id=current_user.id,
+        action="TASK_CREATED",
+        entity_type="Task",
+        entity_id=task.id,
+        new_value=task.status,
+        performed_by=current_user.email,
+    )
     return SuccessResponse(data=TaskRead.model_validate(task))
 
 
