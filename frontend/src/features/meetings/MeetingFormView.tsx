@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
-import type { MeetingCreate } from "../../types";
+import type { MeetingCreate, ProjectRead } from "../../types";
 
 interface MeetingFormViewProps {
   initialValues?: Partial<MeetingCreate>;
+  projects: ProjectRead[];
   onSubmit: (data: MeetingCreate) => void;
   onCancel: () => void;
   isSubmitting?: boolean;
@@ -11,6 +12,7 @@ interface MeetingFormViewProps {
 
 export function MeetingFormView({
   initialValues,
+  projects,
   onSubmit,
   onCancel,
   isSubmitting = false,
@@ -43,16 +45,22 @@ export function MeetingFormView({
               htmlFor="project_id"
               className="block text-xs font-medium text-gray-700"
             >
-              Project ID *
+              Project *
             </label>
-            <input
+            <select
               id="project_id"
               name="project_id"
-              type="number"
               required
               defaultValue={initialValues?.project_id ?? ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none"
-            />
+              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none"
+            >
+              <option value="">Select a project</option>
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.project_code} - {project.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>

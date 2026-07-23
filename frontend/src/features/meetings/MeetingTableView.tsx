@@ -1,7 +1,8 @@
-import type { MeetingRead } from "../../types";
+import type { MeetingRead, ProjectRead } from "../../types";
 
 interface MeetingTableViewProps {
   meetings: MeetingRead[];
+  projects: ProjectRead[];
   isLoading: boolean;
   onEdit?: (meeting: MeetingRead) => void;
   onDelete?: (id: number) => void;
@@ -9,6 +10,7 @@ interface MeetingTableViewProps {
 
 export function MeetingTableView({
   meetings,
+  projects,
   isLoading,
   onEdit,
   onDelete,
@@ -44,7 +46,7 @@ export function MeetingTableView({
               Date & Time
             </th>
             <th className="px-4 py-3 text-left font-medium text-gray-700">
-              Project ID
+              Project
             </th>
             <th className="px-4 py-3 text-left font-medium text-gray-700">
               Notes
@@ -64,7 +66,7 @@ export function MeetingTableView({
               <td className="px-4 py-3 text-gray-600">
                 {new Date(m.date).toLocaleString()}
               </td>
-              <td className="px-4 py-3 text-gray-600">#{m.project_id}</td>
+              <td className="px-4 py-3 text-gray-600">{projects.find((project) => project.id === m.project_id)?.project_code ?? "Unknown project"}</td>
               <td className="px-4 py-3 text-gray-500">{m.notes ?? "—"}</td>
               {(onEdit || onDelete) && (
                 <td className="px-4 py-3 text-right space-x-2">
