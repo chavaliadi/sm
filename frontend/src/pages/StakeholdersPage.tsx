@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import type { StakeholderRead, StakeholderCreate } from "../types";
+import type { ProjectRead, StakeholderRead, StakeholderCreate } from "../types";
+import { getProjects } from "../api/projects";
 import {
   fetchStakeholders,
   createStakeholder,
@@ -11,6 +12,7 @@ import { StakeholderFormView } from "../features/stakeholders/StakeholderFormVie
 
 export function StakeholdersPage() {
   const [stakeholders, setStakeholders] = useState<StakeholderRead[]>([]);
+  const [projects, setProjects] = useState<ProjectRead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,8 +25,12 @@ export function StakeholdersPage() {
     try {
       setIsLoading(true);
       setError(null);
-      const res = await fetchStakeholders();
+      const [res, projectResponse] = await Promise.all([
+        fetchStakeholders(),
+        getProjects({ page_size: 100 }),
+      ]);
       setStakeholders(res.data);
+      setProjects(projectResponse.data);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to load stakeholders";
       setError(msg);
@@ -104,6 +110,7 @@ export function StakeholdersPage() {
 
       <StakeholderTableView
         stakeholders={stakeholders}
+        projects={projects}
         isLoading={isLoading}
         onEdit={handleEditClick}
         onDelete={handleDeleteClick}
@@ -113,6 +120,7 @@ export function StakeholdersPage() {
         <StakeholderFormView
           title={editingStakeholder ? "Edit Stakeholder" : "Add Stakeholder"}
           initialValues={editingStakeholder ?? undefined}
+          projects={projects}
           onSubmit={handleFormSubmit}
           onCancel={() => setIsModalOpen(false)}
           isSubmitting={isSubmitting}

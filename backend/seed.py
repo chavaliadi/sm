@@ -74,6 +74,7 @@ def seed_all():
             user_map[email] = u.id
 
         pa_id = user_map["port1@sagarmala.gov.in"]
+        port2_id = user_map["port2@sagarmala.gov.in"]
         smfcl_id = user_map["smfcl1@sagarmala.gov.in"]
         min_id = user_map["ministry@sagarmala.gov.in"]
         admin_id = user_map["admin@sagarmala.gov.in"]
@@ -279,7 +280,7 @@ def seed_all():
                         priority=priority,
                         status=status_val,
                         evidence_url=evidence,
-                        assigned_to=pa_id if task_count % 2 == 0 else smfcl_id,
+                        assigned_to=pa_id if task_count % 2 == 0 else port2_id,
                         due_date=due_dt,
                         is_active=True,
                     )
