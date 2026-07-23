@@ -36,6 +36,9 @@ PERMISSIONS = [
     "VIEW_AUDIT_LOG",
     "VIEW_CLEARANCES",        
     "MANAGE_CLEARANCES",
+    "VIEW_TENDERS",      
+    "MANAGE_TENDERS",   
+    "MANAGE_BIDS",
 ]
 
 ROLE_PERMISSIONS = {
@@ -61,6 +64,9 @@ ROLE_PERMISSIONS = {
         "VIEW_STAKEHOLDERS",
         "VIEW_DASHBOARD",
         "VIEW_CLEARANCES",
+        "VIEW_TENDERS",
+        "MANAGE_TENDERS",
+        "MANAGE_BIDS",
     ],
     "Ministry": [
         "VIEW_PROJECTS",
