@@ -19,10 +19,11 @@ router = APIRouter(prefix="/api/clearances", tags=["Land Acquisition & Clearance
 # Permission constants for Clearance endpoints.
 # Currently using Project permissions as a fallback.
 # TODO: Replace "VIEW_PROJECTS" with "VIEW_CLEARANCES" when VIEW_CLEARANCES permission is officially added to RBAC.
-CLEARANCE_VIEW_PERMISSION = "VIEW_PROJECTS"
+CLEARANCE_VIEW_PERMISSION = "VIEW_CLEARANCES"
 
 # TODO: Replace "MANAGE_PROJECTS" with "MANAGE_CLEARANCES" when MANAGE_CLEARANCES permission is officially added to RBAC.
-CLEARANCE_MANAGE_PERMISSION = "MANAGE_PROJECTS"
+CLEARANCE_MANAGE_PERMISSION = "MANAGE_CLEARANCES"
+
 
 
 @router.get("", response_model=PaginatedResponse[ClearanceRead])
