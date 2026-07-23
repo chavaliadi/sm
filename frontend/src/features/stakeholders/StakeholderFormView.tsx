@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
-import type { ProjectRead, StakeholderCreate } from "../../types";
+import { useState, useEffect, type ReactNode } from "react";
+import type { StakeholderCreate, ProjectRead } from "@/types";
+import { ProjectSelect } from "@/components/ProjectSelect";
 
 interface StakeholderFormViewProps {
   initialValues?: Partial<StakeholderCreate>;
@@ -18,45 +19,69 @@ export function StakeholderFormView({
   isSubmitting = false,
   title,
 }: StakeholderFormViewProps): ReactNode {
+  const [projectId, setProjectId] = useState<number>(
+    initialValues?.project_id || projects[0]?.id || 0
+  );
+  const [name, setName] = useState(initialValues?.name || "");
+  const [organization, setOrganization] = useState(
+    initialValues?.organization || ""
+  );
+  const [role, setRole] = useState(initialValues?.role || "");
+  const [contactInfo, setContactInfo] = useState(
+    initialValues?.contact_info || ""
+  );
+
+  // ESC key listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onCancel();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onCancel]);
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
     const data: StakeholderCreate = {
-      project_id: Number(formData.get("project_id")),
-      name: String(formData.get("name") ?? "").trim(),
-      organization: String(formData.get("organization") ?? "").trim(),
-      role: String(formData.get("role") ?? "").trim(),
-      contact_info: String(formData.get("contact_info") ?? "").trim() || null,
+      project_id: Number(projectId),
+      name: name.trim(),
+      organization: organization.trim(),
+      role: role.trim(),
+      contact_info: contactInfo.trim() || null,
     };
     onSubmit(data);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-lg border border-gray-200 bg-white p-6 shadow-lg">
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="w-full max-w-lg rounded-xl border border-gray-200 bg-white p-6 shadow-xl">
+        <h3 className="text-lg font-bold text-gray-900">{title}</h3>
+        <p className="mt-0.5 text-xs text-gray-500">
+          Register port authorities, ministry contacts, and agency representatives.
+        </p>
+
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div>
             <label
               htmlFor="project_id"
               className="block text-xs font-medium text-gray-700"
             >
-              Project *
+              Associated Project *
             </label>
-            <select
-              id="project_id"
-              name="project_id"
-              required
-              defaultValue={initialValues?.project_id ?? ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none"
-            >
-              <option value="">Select a project</option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.project_code} - {project.name}
-                </option>
-              ))}
-            </select>
+            <div className="mt-1">
+              <ProjectSelect
+                projects={projects}
+                value={projectId}
+                onChange={setProjectId}
+                required
+              />
+            </div>
           </div>
 
           <div>
@@ -71,8 +96,10 @@ export function StakeholderFormView({
               name="name"
               type="text"
               required
-              defaultValue={initialValues?.name ?? ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Rajesh Sharma"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-1.5 text-xs text-gray-900 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
             />
           </div>
 
@@ -88,8 +115,10 @@ export function StakeholderFormView({
               name="organization"
               type="text"
               required
-              defaultValue={initialValues?.organization ?? ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none"
+              value={organization}
+              onChange={(e) => setOrganization(e.target.value)}
+              placeholder="e.g. Visakhapatnam Port Authority / MoPSW"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-1.5 text-xs text-gray-900 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
             />
           </div>
 
@@ -98,15 +127,17 @@ export function StakeholderFormView({
               htmlFor="role"
               className="block text-xs font-medium text-gray-700"
             >
-              Role *
+              Role / Designation *
             </label>
             <input
               id="role"
               name="role"
               type="text"
               required
-              defaultValue={initialValues?.role ?? ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              placeholder="e.g. Chief Engineer / Nodal Officer"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-1.5 text-xs text-gray-900 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
             />
           </div>
 
@@ -121,8 +152,10 @@ export function StakeholderFormView({
               id="contact_info"
               name="contact_info"
               type="text"
-              defaultValue={initialValues?.contact_info ?? ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none"
+              value={contactInfo}
+              onChange={(e) => setContactInfo(e.target.value)}
+              placeholder="e.g. r.sharma@vpa.gov.in"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-1.5 text-xs text-gray-900 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
             />
           </div>
 
@@ -137,9 +170,9 @@ export function StakeholderFormView({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="rounded-md bg-indigo-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+              className="rounded-md bg-sky-700 px-4 py-1.5 text-xs font-semibold text-white hover:bg-sky-800 disabled:opacity-50"
             >
-              {isSubmitting ? "Saving..." : "Save"}
+              {isSubmitting ? "Saving..." : "Save Stakeholder"}
             </button>
           </div>
         </form>
