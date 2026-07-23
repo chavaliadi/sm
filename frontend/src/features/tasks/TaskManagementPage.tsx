@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import { getUsers } from "@/api/auth";
+import { getProjects } from "@/api/projects";
+import type { ProjectRead, UserRead } from "@/types";
 import type { TaskCreate, TaskListFilters, TaskRead, TaskStatus } from "@/types/task";
 import { TaskForm } from "./TaskForm";
 import {
@@ -44,6 +47,8 @@ function getErrorMessage(error: unknown): string {
 
 export function TaskManagementPage() {
   const [tasks, setTasks] = useState<TaskRead[]>([]);
+  const [projects, setProjects] = useState<ProjectRead[]>([]);
+  const [allUsers, setAllUsers] = useState<UserRead[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [filters, setFilters] = useState<TaskListFilters>({});
@@ -72,6 +77,22 @@ export function TaskManagementPage() {
   useEffect(() => {
     void loadTasks();
   }, [loadTasks]);
+
+  useEffect(() => {
+    async function loadOptions() {
+      try {
+        const [projectResponse, userResponse] = await Promise.all([
+          getProjects({ page_size: 100 }),
+          getUsers({ page_size: 100 }),
+        ]);
+        setProjects(projectResponse.data);
+        setAllUsers(userResponse.data);
+      } catch (loadError) {
+        setError(getErrorMessage(loadError));
+      }
+    }
+    void loadOptions();
+  }, []);
 
   function openCreateForm() {
     setEditingTask(null);
@@ -138,6 +159,17 @@ export function TaskManagementPage() {
     });
   }
 
+  // Port Authority officers only — used in dropdowns
+  const portOfficers = allUsers.filter(
+    (u) =>
+      u.role_id === 2 ||
+      u.name.toLowerCase().includes("port") ||
+      u.email.startsWith("port"),
+  );
+
+  // Full user map for table display (shows any assigned user's name)
+  const projectsById = new Map(projects.map((project) => [project.id, project]));
+  const usersById = new Map(allUsers.map((user) => [user.id, user]));
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
@@ -165,23 +197,30 @@ export function TaskManagementPage() {
       {isFormOpen && (
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="mb-5 text-lg font-semibold text-gray-900">{editingTask === null ? "Create a task" : "Edit task"}</h2>
-          <TaskForm task={editingTask} isSaving={isSaving} onCancel={closeForm} onSubmit={saveTask} />
+          <TaskForm task={editingTask} projects={projects} users={portOfficers} isSaving={isSaving} onCancel={closeForm} onSubmit={saveTask} />
         </div>
       )}
 
       <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <div className="grid gap-3 md:grid-cols-4">
-          <label className="grid gap-1 text-sm font-medium text-gray-700">
-            Project ID
-            <input min="1" type="number" value={projectFilter} onChange={(event) => setProjectFilter(event.target.value)} className="rounded-md border border-gray-300 px-3 py-2 outline-none focus:border-sky-600 focus:ring-2 focus:ring-sky-100" />
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto]">
+          <label className="grid min-w-0 gap-1 text-sm font-medium text-gray-700">
+            Project
+            <select value={projectFilter} onChange={(event) => setProjectFilter(event.target.value)} className="w-full min-w-0 rounded-md border border-gray-300 bg-white px-3 py-2 outline-none focus:border-sky-600 focus:ring-2 focus:ring-sky-100">
+              <option value="">All projects</option>
+              {projects.map((project) => <option key={project.id} value={project.id}>{project.project_code} - {project.name}</option>)}
+            </select>
           </label>
-          <label className="grid gap-1 text-sm font-medium text-gray-700">
-            Assigned user ID
-            <input min="1" type="number" value={assignedFilter} onChange={(event) => setAssignedFilter(event.target.value)} className="rounded-md border border-gray-300 px-3 py-2 outline-none focus:border-sky-600 focus:ring-2 focus:ring-sky-100" />
+          <label className="grid min-w-0 gap-1 text-sm font-medium text-gray-700">
+            Assigned Officer
+            <span className="text-xs font-normal text-gray-500">Port Authority or Port Nodal Officer only</span>
+            <select value={assignedFilter} onChange={(event) => setAssignedFilter(event.target.value)} className="w-full min-w-0 rounded-md border border-gray-300 bg-white px-3 py-2 outline-none focus:border-sky-600 focus:ring-2 focus:ring-sky-100">
+              <option value="">All officers</option>
+              {portOfficers.map((user) => <option key={user.id} value={user.id}>{user.name} ({user.email})</option>)}
+            </select>
           </label>
-          <label className="grid gap-1 text-sm font-medium text-gray-700">
+          <label className="grid min-w-0 gap-1 text-sm font-medium text-gray-700">
             Status
-            <select value={filters.status ?? ""} onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value ? event.target.value as TaskStatus : undefined }))} className="rounded-md border border-gray-300 bg-white px-3 py-2 outline-none focus:border-sky-600 focus:ring-2 focus:ring-sky-100">
+            <select value={filters.status ?? ""} onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value ? event.target.value as TaskStatus : undefined }))} className="w-full min-w-0 rounded-md border border-gray-300 bg-white px-3 py-2 outline-none focus:border-sky-600 focus:ring-2 focus:ring-sky-100">
               <option value="">All statuses</option>
               <option value="TODO">To do</option>
               <option value="IN_PROGRESS">In progress</option>
@@ -208,16 +247,16 @@ export function TaskManagementPage() {
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 text-sm">
               <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                <tr><th className="px-5 py-3">Task</th><th className="px-5 py-3">Priority</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Due date</th><th className="px-5 py-3">Assigned</th><th className="px-5 py-3">Actions</th></tr>
+                <tr><th className="px-5 py-3">Task</th><th className="px-5 py-3">Priority</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Due date</th><th className="px-5 py-3">Assigned Officer</th><th className="px-5 py-3">Actions</th></tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {tasks.map((task) => (
                   <tr key={task.id} className="hover:bg-sky-50/40">
-                    <td className="px-5 py-4"><p className="font-semibold text-gray-900">{task.title}</p><p className="mt-0.5 max-w-xs truncate text-xs text-gray-500">Project {task.project_id}{task.description ? ` · ${task.description}` : ""}</p></td>
+                    <td className="px-5 py-4"><p className="font-semibold text-gray-900">{task.title}</p><p className="mt-0.5 max-w-xs truncate text-xs text-gray-500">{projectsById.get(task.project_id)?.project_code ?? "Unknown project"}{task.description ? ` · ${task.description}` : ""}</p></td>
                     <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${priorityClass(task.priority)}`}>{task.priority.replace("_", " ")}</span></td>
                     <td className="px-5 py-4"><select aria-label={`Status for ${task.title}`} value={task.status} onChange={(event) => void changeStatus(task.id, event.target.value as TaskStatus)} className={`rounded-full px-2.5 py-1 text-xs font-semibold outline-none ${statusClass(task.status)}`}><option value="TODO">To do</option><option value="IN_PROGRESS">In progress</option><option value="DONE">Done</option></select></td>
                     <td className="px-5 py-4 text-gray-600">{formatDate(task.due_date)}</td>
-                    <td className="px-5 py-4 text-gray-600">{task.assigned_to === null ? "Unassigned" : `User ${task.assigned_to}`}</td>
+                    <td className="px-5 py-4 text-gray-600">{task.assigned_to === null ? "Unassigned" : usersById.get(task.assigned_to) ? `${usersById.get(task.assigned_to)?.name} (${usersById.get(task.assigned_to)?.email})` : "Unknown officer"}</td>
                     <td className="px-5 py-4"><div className="flex gap-2"><button onClick={() => openEditForm(task)} className="text-sm font-medium text-sky-700 hover:text-sky-900">Edit</button><button onClick={() => void removeTask(task.id)} className="text-sm font-medium text-red-700 hover:text-red-900">Delete</button></div></td>
                   </tr>
                 ))}
