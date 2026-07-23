@@ -10,6 +10,7 @@ class Tender(SQLModel, table=True):
     tender_code: str = Field(unique=True, index=True)
     title: str
     status: str = Field(default="DRAFT")
+    awarded_bid_id: Optional[int] = Field(default=None, foreign_key="bids.id")
     created_by: int = Field(foreign_key="users.id")
     updated_by: Optional[int] = Field(default=None, foreign_key="users.id")
     is_active: bool = Field(default=True)

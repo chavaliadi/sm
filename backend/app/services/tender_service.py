@@ -57,7 +57,11 @@ def update_tender(session: Session, db_tender: Tender, tender_in: TenderUpdate, 
             
         old_status = db_tender.status
         db_tender.status = tender_in.status
-        
+
+        # When awarding, record which bid won
+        if tender_in.status == "AWARDED" and tender_in.awarded_bid_id is not None:
+            db_tender.awarded_bid_id = tender_in.awarded_bid_id
+
         audit = TenderAuditLog(
             tender_id=db_tender.id,
             actor_id=current_user_id,

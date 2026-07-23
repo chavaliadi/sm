@@ -55,33 +55,6 @@ export interface ProjectRead {
   updated_at: string;
 }
 
-export interface ProjectCreate {
-  project_code: string;
-  name: string;
-  category: string;
-  state: string;
-  port_name: string;
-  stakeholder_info?: string | null;
-  funding_model: string;
-  estimated_cost: number;
-  approved_cost?: number | null;
-  lifecycle_stage?: string;
-}
-
-export interface ProjectUpdate {
-  project_code?: string;
-  name?: string;
-  category?: string;
-  state?: string;
-  port_name?: string;
-  stakeholder_info?: string | null;
-  funding_model?: string;
-  estimated_cost?: number;
-  approved_cost?: number | null;
-  lifecycle_stage?: string;
-  is_active?: boolean;
-}
-
 export interface DPRRead {
   id: number;
   project_id: number;
@@ -98,8 +71,6 @@ export interface DPRAuditLogRead {
   dpr_id: number;
   actor_id: number;
   action: string;
-  old_status?: string | null;
-  new_status?: string | null;
   comment: string | null;
   timestamp: string;
 }
@@ -175,52 +146,3 @@ export interface NotificationRead {
   created_at: string;
 }
 
-export interface TenderRead {
-  id: number;
-  project_id: number;
-  tender_code: string;
-  title: string;
-  status: string;
-  created_by: number;
-  updated_by: number | null;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface TenderCreate {
-  project_id: number;
-  tender_code: string;
-  title: string;
-}
-
-export interface TenderUpdate {
-  title?: string;
-  status?: string;
-}
-
-export interface BidRead {
-  id: number;
-  tender_id: number;
-  bidder_name: string;
-  technical_score?: number | null;
-  financial_amount?: number | null;
-  status: string;
-  created_by: number;
-  updated_by: number | null;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface BidCreate {
-  tender_id: number;
-  bidder_name: string;
-}
-
-export interface BidUpdate {
-  bidder_name?: string;
-  technical_score?: number | null;
-  financial_amount?: number | null;
-  status?: string;
-}
