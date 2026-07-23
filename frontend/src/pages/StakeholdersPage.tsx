@@ -41,7 +41,7 @@ export function StakeholdersPage() {
       const msg =
         err instanceof Error ? err.message : "Failed to load stakeholders data";
       setError(msg);
-    } finally: {
+    } finally {
       setIsLoading(false);
     }
   }, []);
