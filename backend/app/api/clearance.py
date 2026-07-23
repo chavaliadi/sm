@@ -10,13 +10,19 @@ from app.schemas.clearance import (
     ClearanceRead,
     ClearanceCreate,
     ClearanceUpdate,
-    ClearanceDocumentRead,
-    ClearanceDocumentCreate,
     ClearanceExpirySummary
 )
 from app.services import clearance_service
 
 router = APIRouter(prefix="/api/clearances", tags=["Land Acquisition & Clearances"])
+
+# Permission constants for Clearance endpoints.
+# Currently using Project permissions as a fallback.
+# TODO: Replace "VIEW_PROJECTS" with "VIEW_CLEARANCES" when VIEW_CLEARANCES permission is officially added to RBAC.
+CLEARANCE_VIEW_PERMISSION = "VIEW_PROJECTS"
+
+# TODO: Replace "MANAGE_PROJECTS" with "MANAGE_CLEARANCES" when MANAGE_CLEARANCES permission is officially added to RBAC.
+CLEARANCE_MANAGE_PERMISSION = "MANAGE_PROJECTS"
 
 
 @router.get("", response_model=PaginatedResponse[ClearanceRead])
@@ -28,7 +34,7 @@ def list_clearances(
     status: Optional[str] = Query(None, description="Filter by clearance status"),
     expiring_soon: bool = Query(False, description="Filter clearances expiring within 30 days"),
     session: Session = Depends(get_session),
-    _: User = Depends(require_permission("VIEW_PROJECTS")),
+    _: User = Depends(require_permission(CLEARANCE_VIEW_PERMISSION)),  # TODO: Future replace with VIEW_CLEARANCES
 ):
     """
     List all statutory clearances with pagination and filtering.
@@ -52,7 +58,7 @@ def list_clearances(
 def get_clearance_expiry_summary(
     project_id: Optional[int] = Query(None, description="Filter by project ID"),
     session: Session = Depends(get_session),
-    _: User = Depends(require_permission("VIEW_PROJECTS")),
+    _: User = Depends(require_permission(CLEARANCE_VIEW_PERMISSION)),  # TODO: Future replace with VIEW_CLEARANCES
 ):
     """
     Retrieve expiry and status summary metrics for clearance monitoring.
@@ -65,7 +71,7 @@ def get_clearance_expiry_summary(
 def get_clearance(
     clearance_id: int,
     session: Session = Depends(get_session),
-    _: User = Depends(require_permission("VIEW_PROJECTS")),
+    _: User = Depends(require_permission(CLEARANCE_VIEW_PERMISSION)),  # TODO: Future replace with VIEW_CLEARANCES
 ):
     """
     Retrieve details of a single clearance by ID.
@@ -83,7 +89,7 @@ def get_clearance(
 def create_clearance(
     clearance_in: ClearanceCreate,
     session: Session = Depends(get_session),
-    current_user: User = Depends(require_permission("MANAGE_PROJECTS")),
+    current_user: User = Depends(require_permission(CLEARANCE_MANAGE_PERMISSION)),  # TODO: Future replace with MANAGE_CLEARANCES
 ):
     """
     Create a new land acquisition / statutory clearance tracking record.
@@ -99,7 +105,7 @@ def update_clearance(
     clearance_id: int,
     clearance_in: ClearanceUpdate,
     session: Session = Depends(get_session),
-    current_user: User = Depends(require_permission("MANAGE_PROJECTS")),
+    current_user: User = Depends(require_permission(CLEARANCE_MANAGE_PERMISSION)),  # TODO: Future replace with MANAGE_CLEARANCES
 ):
     """
     Update clearance status, approval date, or expiry date.
@@ -121,7 +127,7 @@ def update_clearance(
 def delete_clearance(
     clearance_id: int,
     session: Session = Depends(get_session),
-    current_user: User = Depends(require_permission("MANAGE_PROJECTS")),
+    current_user: User = Depends(require_permission(CLEARANCE_MANAGE_PERMISSION)),  # TODO: Future replace with MANAGE_CLEARANCES
 ):
     """
     Soft delete a clearance record.
@@ -139,36 +145,3 @@ def delete_clearance(
     return SuccessResponse(data=ClearanceRead.model_validate(deleted))
 
 
-@router.post("/{clearance_id}/documents", response_model=SuccessResponse[ClearanceDocumentRead], status_code=status.HTTP_201_CREATED)
-def add_clearance_document(
-    clearance_id: int,
-    doc_in: ClearanceDocumentCreate,
-    session: Session = Depends(get_session),
-    current_user: User = Depends(require_permission("MANAGE_PROJECTS")),
-):
-    """
-    Attach a supporting clearance document reference.
-    """
-    if doc_in.clearance_id != clearance_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "MISMATCH_ID", "message": "Path clearance_id and payload clearance_id do not match"},
-        )
-
-    doc = clearance_service.add_clearance_document(
-        session=session, doc_in=doc_in, current_user_id=current_user.id
-    )
-    return SuccessResponse(data=ClearanceDocumentRead.model_validate(doc))
-
-
-@router.get("/{clearance_id}/documents", response_model=SuccessResponse[List[ClearanceDocumentRead]])
-def list_clearance_documents(
-    clearance_id: int,
-    session: Session = Depends(get_session),
-    _: User = Depends(require_permission("VIEW_PROJECTS")),
-):
-    """
-    List all attached supporting documents for a clearance.
-    """
-    docs = clearance_service.list_clearance_documents(session, clearance_id)
-    return SuccessResponse(data=[ClearanceDocumentRead.model_validate(d) for d in docs])

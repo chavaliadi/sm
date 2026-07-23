@@ -3,12 +3,11 @@ from typing import Optional, List, Tuple
 from fastapi import HTTPException, status
 from sqlmodel import Session, select, func
 
-from app.models.clearance import Clearance, ClearanceDocument
+from app.models.clearance import Clearance
 from app.models.project import Project
 from app.schemas.clearance import (
     ClearanceCreate,
     ClearanceUpdate,
-    ClearanceDocumentCreate,
     ClearanceExpirySummary
 )
 
@@ -76,6 +75,7 @@ def create_clearance(session: Session, clearance_in: ClearanceCreate, current_us
         application_date=clearance_in.application_date,
         approval_date=clearance_in.approval_date,
         expiry_date=clearance_in.expiry_date,
+        document_url=clearance_in.document_url,
         remarks=clearance_in.remarks,
         created_by=current_user_id,
         updated_by=current_user_id,
@@ -116,35 +116,6 @@ def delete_clearance(session: Session, db_clearance: Clearance, current_user_id:
     session.commit()
     session.refresh(db_clearance)
     return db_clearance
-
-def add_clearance_document(
-    session: Session, doc_in: ClearanceDocumentCreate, current_user_id: int
-) -> ClearanceDocument:
-    clearance = get_clearance_by_id(session, doc_in.clearance_id)
-    if not clearance:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "NOT_FOUND", "message": f"Clearance with ID {doc_in.clearance_id} not found"},
-        )
-
-    doc = ClearanceDocument(
-        clearance_id=doc_in.clearance_id,
-        document_name=doc_in.document_name,
-        document_url=doc_in.document_url,
-        uploaded_by=current_user_id,
-        is_active=True,
-    )
-    session.add(doc)
-    session.commit()
-    session.refresh(doc)
-    return doc
-
-def list_clearance_documents(session: Session, clearance_id: int) -> List[ClearanceDocument]:
-    stmt = select(ClearanceDocument).where(
-        ClearanceDocument.clearance_id == clearance_id,
-        ClearanceDocument.is_active == True
-    )
-    return list(session.exec(stmt).all())
 
 def get_expiry_summary(session: Session, project_id: Optional[int] = None) -> ClearanceExpirySummary:
     stmt = select(Clearance).where(Clearance.is_active == True)

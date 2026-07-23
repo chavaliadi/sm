@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
-import { Plus, ShieldAlert, CheckCircle, Clock, FileCheck } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Plus, ShieldAlert, CheckCircle, Clock, FileCheck, FileText } from "lucide-react";
+import type { ProjectRead } from "@/types";
+import { getProjects } from "@/api/projects";
 import { getClearances, getClearanceSummary, deleteClearance } from "./api";
 import { ClearanceFormDialog } from "./ClearanceFormDialog";
 import type { Clearance, ClearanceExpirySummary } from "./types";
@@ -8,6 +9,7 @@ import type { Clearance, ClearanceExpirySummary } from "./types";
 export function ClearancePage() {
   const [clearances, setClearances] = useState<Clearance[]>([]);
   const [summary, setSummary] = useState<ClearanceExpirySummary | null>(null);
+  const [projects, setProjects] = useState<ProjectRead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -17,14 +19,16 @@ export function ClearancePage() {
     setLoading(true);
     setError(null);
     try {
-      const [listRes, summaryRes] = await Promise.all([
+      const [listRes, summaryRes, projectsRes] = await Promise.all([
         getClearances({ page: 1, page_size: 50, clearance_type: typeFilter || undefined }),
         getClearanceSummary(),
+        getProjects({ page_size: 100 }),
       ]);
       setClearances(listRes.data || []);
       setSummary(summaryRes.data);
-    } catch (err: any) {
-      setError(err.message || "Failed to load statutory clearance records");
+      setProjects(projectsRes.data || []);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to load statutory clearance records");
     } finally {
       setLoading(false);
     }
@@ -39,8 +43,8 @@ export function ClearancePage() {
     try {
       await deleteClearance(id);
       void fetchData();
-    } catch (err: any) {
-      alert(err.message || "Failed to delete clearance");
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Failed to delete clearance");
     }
   };
 
@@ -56,10 +60,14 @@ export function ClearancePage() {
             Track statutory approvals, environmental clearances, and expiry monitoring.
           </p>
         </div>
-        <Button onClick={() => setDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
+        <button
+          type="button"
+          onClick={() => setDialogOpen(true)}
+          className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700"
+        >
           <Plus className="mr-1.5 h-4 w-4" />
           Add Clearance
-        </Button>
+        </button>
       </div>
 
       {/* Expiry Monitoring KPI Cards */}
@@ -139,49 +147,68 @@ export function ClearancePage() {
               <tr>
                 <th className="px-4 py-3">Type</th>
                 <th className="px-4 py-3">Title & Authority</th>
-                <th className="px-4 py-3">Project ID</th>
+                <th className="px-4 py-3">Project</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Expiry Date</th>
+                <th className="px-4 py-3">Document</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {clearances.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50/50">
-                  <td className="px-4 py-3 font-semibold text-slate-900">{item.clearance_type}</td>
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-slate-900">{item.title}</div>
-                    <div className="text-xs text-slate-500">{item.authority_name}</div>
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">Project #{item.project_id}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
-                        item.status === "APPROVED"
-                          ? "bg-emerald-100 text-emerald-800"
-                          : item.status === "PENDING"
-                          ? "bg-amber-100 text-amber-800"
-                          : "bg-rose-100 text-rose-800"
-                      }`}
-                    >
-                      {item.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-slate-600">
-                    {item.expiry_date ? new Date(item.expiry_date).toLocaleDateString() : "N/A"}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(item.id)}
-                      className="text-xs text-rose-600 hover:text-rose-700"
-                    >
-                      Delete
-                    </Button>
-                  </td>
-                </tr>
-              ))}
+              {clearances.map((item) => {
+                const proj = projects.find((p) => p.id === item.project_id);
+                const projectDisplay = proj ? `${proj.project_code} - ${proj.name}` : `Project #${item.project_id}`;
+                return (
+                  <tr key={item.id} className="hover:bg-slate-50/50">
+                    <td className="px-4 py-3 font-semibold text-slate-900">{item.clearance_type}</td>
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-slate-900">{item.title}</div>
+                      <div className="text-xs text-slate-500">{item.authority_name}</div>
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">{projectDisplay}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
+                          item.status === "APPROVED"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : item.status === "PENDING"
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-rose-100 text-rose-800"
+                        }`}
+                      >
+                        {item.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-slate-600">
+                      {item.expiry_date ? new Date(item.expiry_date).toLocaleDateString() : "N/A"}
+                    </td>
+                    <td className="px-4 py-3 text-xs">
+                      {item.document_url ? (
+                        <a
+                          href={item.document_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 font-medium text-blue-600 hover:underline"
+                        >
+                          <FileText className="h-3.5 w-3.5" />
+                          View Doc
+                        </a>
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(item.id)}
+                        className="text-xs font-medium text-rose-600 hover:text-rose-700"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -192,6 +219,7 @@ export function ClearancePage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onSuccess={fetchData}
+        projects={projects}
       />
     </div>
   );

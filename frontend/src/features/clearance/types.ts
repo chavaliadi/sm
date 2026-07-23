@@ -18,6 +18,7 @@ export interface Clearance {
   application_date?: string;
   approval_date?: string;
   expiry_date?: string;
+  document_url?: string;
   remarks?: string;
   is_active: boolean;
   created_by?: number;
@@ -35,6 +36,7 @@ export interface ClearanceCreatePayload {
   application_date?: string;
   approval_date?: string;
   expiry_date?: string;
+  document_url?: string;
   remarks?: string;
 }
 
@@ -45,3 +47,4 @@ export interface ClearanceExpirySummary {
   approved_count: number;
   pending_count: number;
 }
+

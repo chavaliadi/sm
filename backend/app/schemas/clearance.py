@@ -26,6 +26,7 @@ class ClearanceCreate(SQLModel):
     application_date: Optional[datetime] = None
     approval_date: Optional[datetime] = None
     expiry_date: Optional[datetime] = None
+    document_url: Optional[str] = None
     remarks: Optional[str] = None
 
 class ClearanceUpdate(SQLModel):
@@ -35,6 +36,7 @@ class ClearanceUpdate(SQLModel):
     application_date: Optional[datetime] = None
     approval_date: Optional[datetime] = None
     expiry_date: Optional[datetime] = None
+    document_url: Optional[str] = None
     remarks: Optional[str] = None
 
 class ClearanceRead(SQLModel):
@@ -47,6 +49,7 @@ class ClearanceRead(SQLModel):
     application_date: Optional[datetime] = None
     approval_date: Optional[datetime] = None
     expiry_date: Optional[datetime] = None
+    document_url: Optional[str] = None
     remarks: Optional[str] = None
     is_active: bool
     created_by: Optional[int] = None
@@ -54,23 +57,10 @@ class ClearanceRead(SQLModel):
     created_at: datetime
     updated_at: datetime
 
-class ClearanceDocumentCreate(SQLModel):
-    clearance_id: int
-    document_name: str
-    document_url: str
-
-class ClearanceDocumentRead(SQLModel):
-    id: int
-    clearance_id: int
-    document_name: str
-    document_url: str
-    uploaded_by: Optional[int] = None
-    uploaded_at: datetime
-    is_active: bool
-
 class ClearanceExpirySummary(SQLModel):
     total_clearances: int
     expiring_soon_30_days: int
     expired_count: int
     approved_count: int
     pending_count: int
+

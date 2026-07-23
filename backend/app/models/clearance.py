@@ -14,6 +14,7 @@ class Clearance(SQLModel, table=True):
     application_date: Optional[datetime] = None
     approval_date: Optional[datetime] = None
     expiry_date: Optional[datetime] = None
+    document_url: Optional[str] = None
     remarks: Optional[str] = None
     is_active: bool = Field(default=True)
 
@@ -22,14 +23,3 @@ class Clearance(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-
-class ClearanceDocument(SQLModel, table=True):
-    __tablename__ = "clearance_documents"
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    clearance_id: int = Field(foreign_key="clearances.id", index=True)
-    document_name: str
-    document_url: str
-    uploaded_by: Optional[int] = Field(default=None, foreign_key="users.id")
-    uploaded_at: datetime = Field(default_factory=datetime.utcnow)
-    is_active: bool = Field(default=True)
