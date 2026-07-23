@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
+import type { ProjectRead, UserRead } from "@/types";
 import type { TaskCreate, TaskPriority, TaskRead, TaskStatus } from "@/types/task";
 
 interface TaskFormProps {
   task: TaskRead | null;
+  projects: ProjectRead[];
+  users: UserRead[];
   isSaving: boolean;
   onCancel: () => void;
   onSubmit: (task: TaskCreate) => Promise<void>;
@@ -47,7 +50,14 @@ function toFormValues(task: TaskRead | null): TaskFormValues {
   };
 }
 
-export function TaskForm({ task, isSaving, onCancel, onSubmit }: TaskFormProps) {
+export function TaskForm({
+  task,
+  projects,
+  users,
+  isSaving,
+  onCancel,
+  onSubmit,
+}: TaskFormProps) {
   const [values, setValues] = useState<TaskFormValues>(() => toFormValues(task));
 
   useEffect(() => {
@@ -80,25 +90,43 @@ export function TaskForm({ task, isSaving, onCancel, onSubmit }: TaskFormProps) 
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="grid gap-1.5 text-sm font-medium text-gray-700">
-          Project ID
-          <input
+          Project
+          <select
             required
-            min="1"
-            type="number"
             value={values.projectId}
             onChange={(event) => setValue("projectId", event.target.value)}
             className="rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm outline-none focus:border-sky-600 focus:ring-2 focus:ring-sky-100"
-          />
+          >
+            <option value="">Select a project</option>
+            {projects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.project_code} - {project.name}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="grid gap-1.5 text-sm font-medium text-gray-700">
-          Assigned user ID
-          <input
-            min="1"
-            type="number"
+          Assigned Officer
+          <span className="text-xs font-normal text-gray-500">Port Authority or Port Nodal Officer only</span>
+          <select
             value={values.assignedTo}
             onChange={(event) => setValue("assignedTo", event.target.value)}
             className="rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm outline-none focus:border-sky-600 focus:ring-2 focus:ring-sky-100"
-          />
+          >
+            <option value="">Unassigned</option>
+            {users
+              .filter(
+                (u) =>
+                  u.role_id === 2 ||
+                  u.name.toLowerCase().includes("port") ||
+                  u.email.startsWith("port"),
+              )
+              .map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name} ({user.email})
+                </option>
+              ))}
+          </select>
         </label>
       </div>
 

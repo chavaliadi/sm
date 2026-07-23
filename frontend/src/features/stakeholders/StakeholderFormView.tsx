@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
-import type { StakeholderCreate } from "../../types";
+import type { ProjectRead, StakeholderCreate } from "../../types";
 
 interface StakeholderFormViewProps {
   initialValues?: Partial<StakeholderCreate>;
+  projects: ProjectRead[];
   onSubmit: (data: StakeholderCreate) => void;
   onCancel: () => void;
   isSubmitting?: boolean;
@@ -11,6 +12,7 @@ interface StakeholderFormViewProps {
 
 export function StakeholderFormView({
   initialValues,
+  projects,
   onSubmit,
   onCancel,
   isSubmitting = false,
@@ -39,16 +41,22 @@ export function StakeholderFormView({
               htmlFor="project_id"
               className="block text-xs font-medium text-gray-700"
             >
-              Project ID *
+              Project *
             </label>
-            <input
+            <select
               id="project_id"
               name="project_id"
-              type="number"
               required
               defaultValue={initialValues?.project_id ?? ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none"
-            />
+              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none"
+            >
+              <option value="">Select a project</option>
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.project_code} - {project.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>

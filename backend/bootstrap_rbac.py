@@ -34,6 +34,8 @@ PERMISSIONS = [
     "MANAGE_STAKEHOLDERS",
     "VIEW_DASHBOARD",
     "VIEW_AUDIT_LOG",
+    "VIEW_CLEARANCES",        
+    "MANAGE_CLEARANCES",
 ]
 
 ROLE_PERMISSIONS = {
@@ -48,6 +50,8 @@ ROLE_PERMISSIONS = {
         "VIEW_STAKEHOLDERS",
         "MANAGE_STAKEHOLDERS",
         "VIEW_DASHBOARD",
+        "VIEW_CLEARANCES",
+        "MANAGE_CLEARANCES",
     ],
     "SMFCL": [
         "VIEW_PROJECTS",
@@ -56,6 +60,7 @@ ROLE_PERMISSIONS = {
         "VIEW_TASKS",
         "VIEW_STAKEHOLDERS",
         "VIEW_DASHBOARD",
+        "VIEW_CLEARANCES",
     ],
     "Ministry": [
         "VIEW_PROJECTS",
