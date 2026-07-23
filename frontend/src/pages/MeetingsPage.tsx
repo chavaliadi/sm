@@ -42,7 +42,7 @@ export function MeetingsPage() {
       const msg =
         err instanceof Error ? err.message : "Failed to load meetings data";
       setError(msg);
-    } fontally: {
+    } finally: {
       setIsLoading(false);
     }
   }, []);
