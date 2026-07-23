@@ -1,11 +1,29 @@
 import { apiClient } from "./client";
-import type { UserRead } from "@/types";
+import type { PaginatedResponse, UserRead } from "@/types";
 
 export interface LoginResponse {
   data: {
     access_token: string;
     token_type: string;
     user: UserRead;
+  };
+}
+
+export interface UserListParams {
+  page?: number;
+  page_size?: number;
+}
+
+export async function getUsers(
+  params?: UserListParams,
+): Promise<PaginatedResponse<UserRead>> {
+  const response = await apiClient.get<PaginatedResponse<UserRead>>(
+    "/auth/users",
+    { params },
+  );
+  return {
+    ...response.data,
+    data: response.data.data.filter((user) => user.is_active),
   };
 }
 
@@ -20,13 +38,12 @@ export async function loginUser(email: string, password: string): Promise<LoginR
       window.localStorage.setItem("access_token", access_token);
     }
     return response.data.data;
-  } catch (error: any) {
-    const message =
-      error.response?.data?.error?.message ||
-      error.response?.data?.detail?.message ||
-      error.response?.data?.detail ||
-      (error instanceof Error ? error.message : "Invalid credentials. Please try again.");
-    throw new Error(message);
+  } catch (error: unknown) {
+    throw new Error(
+      error instanceof Error
+        ? error.message
+        : "Invalid credentials. Please try again.",
+    );
   }
 }
 

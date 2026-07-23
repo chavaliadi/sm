@@ -1,7 +1,8 @@
-import type { StakeholderRead } from "../../types";
+import type { ProjectRead, StakeholderRead } from "../../types";
 
 interface StakeholderTableViewProps {
   stakeholders: StakeholderRead[];
+  projects: ProjectRead[];
   isLoading: boolean;
   onEdit?: (stakeholder: StakeholderRead) => void;
   onDelete?: (id: number) => void;
@@ -9,6 +10,7 @@ interface StakeholderTableViewProps {
 
 export function StakeholderTableView({
   stakeholders,
+  projects,
   isLoading,
   onEdit,
   onDelete,
@@ -47,7 +49,7 @@ export function StakeholderTableView({
               Role
             </th>
             <th className="px-4 py-3 text-left font-medium text-gray-700">
-              Project ID
+              Project
             </th>
             <th className="px-4 py-3 text-left font-medium text-gray-700">
               Contact Info
@@ -66,7 +68,7 @@ export function StakeholderTableView({
               <td className="px-4 py-3 font-medium text-gray-900">{s.name}</td>
               <td className="px-4 py-3 text-gray-600">{s.organization}</td>
               <td className="px-4 py-3 text-gray-600">{s.role}</td>
-              <td className="px-4 py-3 text-gray-600">#{s.project_id}</td>
+              <td className="px-4 py-3 text-gray-600">{projects.find((project) => project.id === s.project_id)?.project_code ?? "Unknown project"}</td>
               <td className="px-4 py-3 text-gray-500">
                 {s.contact_info ?? "—"}
               </td>

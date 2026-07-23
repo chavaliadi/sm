@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import type { MeetingRead, MeetingCreate } from "../types";
+import type { MeetingRead, MeetingCreate, ProjectRead } from "../types";
+import { getProjects } from "../api/projects";
 import {
   fetchMeetings,
   createMeeting,
@@ -11,6 +12,7 @@ import { MeetingFormView } from "../features/meetings/MeetingFormView";
 
 export function MeetingsPage() {
   const [meetings, setMeetings] = useState<MeetingRead[]>([]);
+  const [projects, setProjects] = useState<ProjectRead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,8 +26,12 @@ export function MeetingsPage() {
     try {
       setIsLoading(true);
       setError(null);
-      const res = await fetchMeetings();
+      const [res, projectResponse] = await Promise.all([
+        fetchMeetings(),
+        getProjects({ page_size: 100 }),
+      ]);
       setMeetings(res.data);
+      setProjects(projectResponse.data);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to load meetings";
       setError(msg);
@@ -105,6 +111,7 @@ export function MeetingsPage() {
 
       <MeetingTableView
         meetings={meetings}
+        projects={projects}
         isLoading={isLoading}
         onEdit={handleEditClick}
         onDelete={handleDeleteClick}
@@ -114,6 +121,7 @@ export function MeetingsPage() {
         <MeetingFormView
           title={editingMeeting ? "Edit Meeting Notes" : "Log New Meeting"}
           initialValues={editingMeeting ?? undefined}
+          projects={projects}
           onSubmit={handleFormSubmit}
           onCancel={() => setIsModalOpen(false)}
           isSubmitting={isSubmitting}
