@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
-import type { MeetingCreate, ProjectRead } from "../../types";
+import { useState, useEffect, type ReactNode } from "react";
+import type { MeetingCreate, ProjectRead } from "@/types";
+import { ProjectSelect } from "@/components/ProjectSelect";
 
 interface MeetingFormViewProps {
   initialValues?: Partial<MeetingCreate>;
@@ -18,49 +19,67 @@ export function MeetingFormView({
   isSubmitting = false,
   title,
 }: MeetingFormViewProps): ReactNode {
+  const [projectId, setProjectId] = useState<number>(
+    initialValues?.project_id || projects[0]?.id || 0
+  );
+  const [meetingTitle, setMeetingTitle] = useState(initialValues?.title || "");
+  const [date, setDate] = useState(
+    initialValues?.date
+      ? new Date(initialValues.date).toISOString().slice(0, 16)
+      : ""
+  );
+  const [notes, setNotes] = useState(initialValues?.notes || "");
+
+  // ESC key listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onCancel();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onCancel]);
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const dateStr = String(formData.get("date") ?? "");
     const data: MeetingCreate = {
-      project_id: Number(formData.get("project_id")),
-      title: String(formData.get("title") ?? "").trim(),
-      date: new Date(dateStr).toISOString(),
-      notes: String(formData.get("notes") ?? "").trim() || null,
+      project_id: Number(projectId),
+      title: meetingTitle.trim(),
+      date: date ? new Date(date).toISOString() : new Date().toISOString(),
+      notes: notes.trim() || null,
     };
     onSubmit(data);
   };
 
-  const defaultDateFormatted = initialValues?.date
-    ? new Date(initialValues.date).toISOString().slice(0, 16)
-    : "";
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-lg border border-gray-200 bg-white p-6 shadow-lg">
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="w-full max-w-lg rounded-xl border border-gray-200 bg-white p-6 shadow-xl">
+        <h3 className="text-lg font-bold text-gray-900">{title}</h3>
+        <p className="mt-0.5 text-xs text-gray-500">
+          Record meeting agenda, participant decisions, and project timelines.
+        </p>
+
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div>
             <label
               htmlFor="project_id"
               className="block text-xs font-medium text-gray-700"
             >
-              Project *
+              Associated Project *
             </label>
-            <select
-              id="project_id"
-              name="project_id"
-              required
-              defaultValue={initialValues?.project_id ?? ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none"
-            >
-              <option value="">Select a project</option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.project_code} - {project.name}
-                </option>
-              ))}
-            </select>
+            <div className="mt-1">
+              <ProjectSelect
+                projects={projects}
+                value={projectId}
+                onChange={setProjectId}
+                required
+              />
+            </div>
           </div>
 
           <div>
@@ -75,8 +94,10 @@ export function MeetingFormView({
               name="title"
               type="text"
               required
-              defaultValue={initialValues?.title ?? ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none"
+              value={meetingTitle}
+              onChange={(e) => setMeetingTitle(e.target.value)}
+              placeholder="e.g. Stakeholder DPR Review Session"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-1.5 text-xs text-gray-900 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
             />
           </div>
 
@@ -92,8 +113,9 @@ export function MeetingFormView({
               name="date"
               type="datetime-local"
               required
-              defaultValue={defaultDateFormatted}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-1.5 text-xs text-gray-900 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
             />
           </div>
 
@@ -102,14 +124,16 @@ export function MeetingFormView({
               htmlFor="notes"
               className="block text-xs font-medium text-gray-700"
             >
-              Meeting Minutes / Notes
+              Minutes of Meeting / Notes
             </label>
             <textarea
               id="notes"
               name="notes"
-              rows={3}
-              defaultValue={initialValues?.notes ?? ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none"
+              rows={4}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Enter meeting summary, decisions, and action items..."
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-1.5 text-xs text-gray-900 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
             />
           </div>
 
@@ -124,9 +148,9 @@ export function MeetingFormView({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="rounded-md bg-indigo-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+              className="rounded-md bg-sky-700 px-4 py-1.5 text-xs font-semibold text-white hover:bg-sky-800 disabled:opacity-50"
             >
-              {isSubmitting ? "Saving..." : "Save"}
+              {isSubmitting ? "Saving..." : "Save Meeting"}
             </button>
           </div>
         </form>

@@ -84,6 +84,8 @@ ROLE_PERMISSIONS = {
         "VIEW_CLEARANCES",
         "VIEW_TENDERS",
         "VIEW_BIDS",
+        "MANAGE_TENDERS",
+        "MANAGE_BIDS",
     ],
     "Ministry": [
         "VIEW_PROJECTS",
