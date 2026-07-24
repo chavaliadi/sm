@@ -21,6 +21,7 @@ from app.models.contract import (
     WorkOrder,
     WORK_ORDER_TRANSITIONS,
 )
+from app.models.tender import Tender
 from app.schemas.contract import ContractCreate, ContractUpdate, WorkOrderCreate, WorkOrderUpdate
 
 
@@ -114,6 +115,31 @@ def list_contracts(
 def create_contract(
     session: Session, contract_in: ContractCreate, current_user_id: int
 ) -> Contract:
+    tender = session.exec(
+        select(Tender).where(Tender.id == contract_in.tender_id, Tender.is_active == True)
+    ).first()
+    if not tender:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "TENDER_NOT_FOUND",
+                "message": f"Tender {contract_in.tender_id} does not exist.",
+                "field": "tender_id",
+            },
+        )
+    if tender.status != "AWARDED":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "TENDER_NOT_AWARDED",
+                "message": (
+                    f"Tender {contract_in.tender_id} must be AWARDED before a contract can "
+                    f"be created (current status: {tender.status})."
+                ),
+                "field": "tender_id",
+            },
+        )
+
     contract = Contract(
         **contract_in.model_dump(),
         created_by=current_user_id,
