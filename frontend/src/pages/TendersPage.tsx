@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, type FormEvent } from "react";
 import { getTenders, createTender, updateTender, getTenderBids, createBid, evaluateBids } from "@/api/tender";
 import { getProjects } from "@/api/projects";
 import type { TenderRead, BidRead, ProjectRead } from "@/types";
-import { CheckCircle2, Circle, Clock, Loader2, ArrowRight } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 // The full 14 stages of a tender from the RFP
 const TENDER_STAGES = [

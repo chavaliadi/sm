@@ -14,8 +14,6 @@ import type { DPRRead, DPRAuditLogRead, ProjectRead } from "@/types";
 import { CheckCircle2, Circle, Loader2, XCircle } from "lucide-react";
 
 const DprWorkflowStepper = ({ status }: { status: string }) => {
-  const isDraftOrSubmitted = status === "DRAFT" || status === "SUBMITTED";
-  const isSmfcl = status === "SMFCL_REVIEW" || status === "REJECTED_BY_SMFCL";
   const isMinistry = status === "FORWARDED_TO_MINISTRY" || status === "REJECTED_BY_MINISTRY" || status === "APPROVED" || status === "FUNDS_RELEASED";
 
   // States: 0 = pending, 1 = active, 2 = done, 3 = rejected

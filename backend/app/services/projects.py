@@ -89,42 +89,12 @@ def update_project(
     current_user_id: Optional[int] = None,
 ) -> Project:
     """Update fields on an existing project record."""
-    old_stage = db_project.lifecycle_stage
     update_data = project_in.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(db_project, field, value)
 
-    new_stage = db_project.lifecycle_stage
-
     db_project.updated_by = current_user_id
     db_project.updated_at = datetime.utcnow()
-
-    # Sync DPR when project stage is updated
-    if old_stage != new_stage:
-        from app.models.dpr import DPR, DPRAuditLog
-        dpr = session.exec(select(DPR).where(DPR.project_id == db_project.id, DPR.is_active == True)).first()
-        if dpr:
-            old_dpr_status = dpr.status
-            new_dpr_status = None
-            if new_stage == "SANCTIONED":
-                new_dpr_status = "APPROVED"
-            elif new_stage == "APPRAISAL_AND_SANCTION":
-                new_dpr_status = "SMFCL_REVIEW"
-            elif new_stage in ["UNDER_EXECUTION", "COMPLETED"]:
-                new_dpr_status = "FUNDS_RELEASED"
-            
-            if new_dpr_status and dpr.status != new_dpr_status:
-                dpr.status = new_dpr_status
-                dpr.updated_at = datetime.utcnow()
-                session.add(dpr)
-                # write audit log 
-                audit = DPRAuditLog(
-                    dpr_id=dpr.id, actor_id=current_user_id or 1,
-                    action="FORCE_SYNC_FROM_PROJECT",
-                    old_status=old_dpr_status, new_status=new_dpr_status,
-                    comment=f"Auto-synced since Project stage changed to {new_stage}"
-                )
-                session.add(audit)
 
     session.add(db_project)
     session.commit()
