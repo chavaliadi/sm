@@ -5,3 +5,5 @@ from app.models.task import Task
 from app.models.stakeholder import Stakeholder, Meeting
 from app.models.notification import Notification
 from app.models.audit import AuditLog
+from app.models.tender import Tender, TenderAuditLog
+from app.models.bid import Bid
