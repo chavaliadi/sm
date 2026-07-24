@@ -82,3 +82,4 @@ lerna-debug.log*
 # Database & Storage
 *.sqlite
 *.db
+backend/.env
