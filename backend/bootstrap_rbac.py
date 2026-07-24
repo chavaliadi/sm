@@ -34,8 +34,12 @@ PERMISSIONS = [
     "MANAGE_STAKEHOLDERS",
     "VIEW_DASHBOARD",
     "VIEW_AUDIT_LOG",
-    "VIEW_CLEARANCES",        
+    "VIEW_CLEARANCES",
     "MANAGE_CLEARANCES",
+    "VIEW_TENDERS",
+    "MANAGE_TENDERS",
+    "VIEW_BIDS",
+    "MANAGE_BIDS",
 ]
 
 ROLE_PERMISSIONS = {
@@ -52,6 +56,10 @@ ROLE_PERMISSIONS = {
         "VIEW_DASHBOARD",
         "VIEW_CLEARANCES",
         "MANAGE_CLEARANCES",
+        "VIEW_TENDERS",
+        "MANAGE_TENDERS",
+        "VIEW_BIDS",
+        "MANAGE_BIDS",
     ],
     "SMFCL": [
         "VIEW_PROJECTS",
@@ -61,12 +69,15 @@ ROLE_PERMISSIONS = {
         "VIEW_STAKEHOLDERS",
         "VIEW_DASHBOARD",
         "VIEW_CLEARANCES",
+        "VIEW_TENDERS",
+        "VIEW_BIDS",
     ],
     "Ministry": [
         "VIEW_PROJECTS",
         "VIEW_DPR",
         "REVIEW_DPR",
         "VIEW_DASHBOARD",
+        "VIEW_TENDERS",
     ],
 }
 
