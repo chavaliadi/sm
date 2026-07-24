@@ -7,7 +7,8 @@ class BidBase(BaseModel):
     bidder_name: str
 
 class BidCreate(BidBase):
-    pass
+    technical_score: Optional[float] = None
+    financial_amount: Optional[float] = None
 
 class BidUpdate(BaseModel):
     bidder_name: Optional[str] = None

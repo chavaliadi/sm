@@ -216,6 +216,8 @@ export interface BidRead {
 export interface BidCreate {
   tender_id: number;
   bidder_name: string;
+  technical_score?: number;
+  financial_amount?: number;
 }
 
 export interface BidUpdate {

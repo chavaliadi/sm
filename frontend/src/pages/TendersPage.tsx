@@ -22,6 +22,8 @@ export function TendersPage() {
     const [bids, setBids] = useState<BidRead[]>([]);
     const [loadingBids, setLoadingBids] = useState(false);
     const [bidderName, setBidderName] = useState("");
+    const [technicalScore, setTechnicalScore] = useState<number | "">("");
+    const [financialAmount, setFinancialAmount] = useState<number | "">("");
     const [bidError, setBidError] = useState<string | null>(null);
 
     const loadData = useCallback(async () => {
@@ -80,6 +82,8 @@ export function TendersPage() {
         setLoadingBids(true);
         setBidError(null);
         setBidderName("");
+        setTechnicalScore("");
+        setFinancialAmount("");
         try {
             const res = await getTenderBids(tender.id);
             setBids(res.data || []);
@@ -99,8 +103,12 @@ export function TendersPage() {
             await createBid(bidsModalTender.id, {
                 tender_id: bidsModalTender.id,
                 bidder_name: bidderName,
+                technical_score: technicalScore === "" ? undefined : Number(technicalScore),
+                financial_amount: financialAmount === "" ? undefined : Number(financialAmount),
             });
             setBidderName("");
+            setTechnicalScore("");
+            setFinancialAmount("");
             // Refresh bids
             const res = await getTenderBids(bidsModalTender.id);
             setBids(res.data || []);
@@ -286,8 +294,20 @@ export function TendersPage() {
                                     <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
                                         {bids.map(bid => (
                                             <div key={bid.id} className="p-3 bg-gray-50 border border-gray-100 rounded-md text-xs">
-                                                <div className="font-semibold">{bid.bidder_name}</div>
-                                                <div className="text-gray-500 mt-1">Status: {bid.status}</div>
+                                                <div className="font-semibold text-sky-800">{bid.bidder_name}</div>
+                                                <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-gray-200">
+                                                    <div>
+                                                        <span className="text-gray-500">Tech Score:</span>{" "}
+                                                        <span className="font-medium">{bid.technical_score ?? "N/A"}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-500">Amount:</span>{" "}
+                                                        <span className="font-medium text-emerald-700">
+                                                            {bid.financial_amount ? `₹${bid.financial_amount.toLocaleString()}` : "N/A"}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="text-gray-500 mt-2">Status: <span className="font-medium">{bid.status}</span></div>
                                             </div>
                                         ))}
                                     </div>
@@ -309,7 +329,31 @@ export function TendersPage() {
                                                 required
                                                 value={bidderName}
                                                 onChange={(e) => setBidderName(e.target.value)}
-                                                className="mt-1 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-xs"
+                                                className="mt-1 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-xs focus:ring-sky-500 focus:border-sky-500"
+                                                placeholder="e.g. Larsen & Toubro"
+                                            />
+                                        </div>
+                                        <div className="mt-3">
+                                            <label className="block text-[11px] font-medium text-gray-700">Financial Amount (₹) *</label>
+                                            <input
+                                                required
+                                                type="number"
+                                                step="0.01"
+                                                value={financialAmount}
+                                                onChange={(e) => setFinancialAmount(e.target.value === "" ? "" : Number(e.target.value))}
+                                                className="mt-1 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-xs focus:ring-sky-500 focus:border-sky-500"
+                                                placeholder="e.g. 15000000"
+                                            />
+                                        </div>
+                                        <div className="mt-3">
+                                            <label className="block text-[11px] font-medium text-gray-700">Technical Score (Optional)</label>
+                                            <input
+                                                type="number"
+                                                step="0.1"
+                                                value={technicalScore}
+                                                onChange={(e) => setTechnicalScore(e.target.value === "" ? "" : Number(e.target.value))}
+                                                className="mt-1 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-xs focus:ring-sky-500 focus:border-sky-500"
+                                                placeholder="e.g. 85.5"
                                             />
                                         </div>
                                         <button type="submit" disabled={isSubmitting} className="mt-3 w-full rounded-md bg-emerald-700 px-4 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">
