@@ -56,6 +56,8 @@ PERMISSIONS = [
     "VIEW_CONTRACTS",       
     "MANAGE_CONTRACTS",     
     "MANAGE_WORK_ORDERS",
+    "VIEW_CONTRACTORS",
+    "MANAGE_CONTRACTORS",
 ]
 
 ROLE_PERMISSIONS = {
@@ -88,6 +90,8 @@ ROLE_PERMISSIONS = {
         "VIEW_CONTRACTS",
         "MANAGE_CONTRACTS",
         "MANAGE_WORK_ORDERS",
+        "VIEW_CONTRACTORS",
+        "MANAGE_CONTRACTORS",
     ],
     "Ministry": [
         "VIEW_PROJECTS",

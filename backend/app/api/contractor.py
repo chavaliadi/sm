@@ -21,10 +21,10 @@ router = APIRouter(prefix="/api/contractors", tags=["Contractors"])
 # Permission constants for Contractor endpoints.
 # Currently using Stakeholder permissions as a temporary fallback.
 # TODO: Replace "VIEW_STAKEHOLDERS" with "VIEW_CONTRACTORS" when VIEW_CONTRACTORS permission is officially added to RBAC.
-CONTRACTOR_VIEW_PERMISSION = "VIEW_STAKEHOLDERS"
+CONTRACTOR_VIEW_PERMISSION = "VIEW_CONTRACTORS"
 
 # TODO: Replace "MANAGE_STAKEHOLDERS" with "MANAGE_CONTRACTORS" when MANAGE_CONTRACTORS permission is officially added to RBAC.
-CONTRACTOR_MANAGE_PERMISSION = "MANAGE_STAKEHOLDERS"
+CONTRACTOR_MANAGE_PERMISSION = "MANAGE_CONTRACTORS"
 
 
 @router.get("", response_model=PaginatedResponse[ContractorRead])
