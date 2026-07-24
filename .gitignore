@@ -83,3 +83,4 @@ lerna-debug.log*
 *.sqlite
 *.db
 backend/.env
+frontend/.env
