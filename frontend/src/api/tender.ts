@@ -44,3 +44,8 @@ export async function updateBid(bidId: number, body: BidUpdate): Promise<BidRead
     const response = await apiClient.put<SuccessResponse<BidRead>>(`/tenders/bids/${bidId}`, body);
     return response.data.data;
 }
+
+export async function evaluateBids(tenderId: number): Promise<PaginatedResponse<BidRead>> {
+    const response = await apiClient.post<PaginatedResponse<BidRead>>(`/tenders/${tenderId}/evaluate`);
+    return response.data;
+}

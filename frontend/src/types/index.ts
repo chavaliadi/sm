@@ -180,7 +180,19 @@ export interface TenderRead {
   project_id: number;
   tender_code: string;
   title: string;
+  description: string | null;
   status: string;
+  spoc_id: number | null;
+  awarded_bid_id: number | null;
+  award_date: string | null;
+  contract_value: number | null;
+  contract_start_date: string | null;
+  contract_end_date: string | null;
+  loa_reference: string | null;
+  bid_submission_deadline: string | null;
+  bid_closing_date: string | null;
+  evaluation_completion_date: string | null;
+  tender_completion_date: string | null;
   created_by: number;
   updated_by: number | null;
   is_active: boolean;
@@ -192,19 +204,42 @@ export interface TenderCreate {
   project_id: number;
   tender_code: string;
   title: string;
+  description?: string;
+  spoc_id?: number;
+  bid_submission_deadline?: string;
 }
 
 export interface TenderUpdate {
   title?: string;
+  description?: string;
   status?: string;
+  spoc_id?: number;
+  awarded_bid_id?: number;
+  award_date?: string;
+  contract_value?: number;
+  contract_start_date?: string;
+  contract_end_date?: string;
+  loa_reference?: string;
+  bid_submission_deadline?: string;
+  bid_closing_date?: string;
+  evaluation_completion_date?: string;
+  tender_completion_date?: string;
 }
 
 export interface BidRead {
   id: number;
   tender_id: number;
   bidder_name: string;
-  technical_score?: number | null;
-  financial_amount?: number | null;
+  organization: string | null;
+  contact_email: string | null;
+  technical_score: number | null;
+  financial_amount: number | null;
+  financial_rank: number | null;
+  is_l1: boolean;
+  document_ref: string | null;
+  document_mime: string | null;
+  signature_status: string;
+  submission_date: string;
   status: string;
   created_by: number;
   updated_by: number | null;
@@ -216,13 +251,22 @@ export interface BidRead {
 export interface BidCreate {
   tender_id: number;
   bidder_name: string;
+  organization?: string;
+  contact_email?: string;
   technical_score?: number;
   financial_amount?: number;
+  document_ref?: string;
 }
 
 export interface BidUpdate {
   bidder_name?: string;
+  organization?: string;
+  contact_email?: string;
   technical_score?: number | null;
   financial_amount?: number | null;
+  document_ref?: string;
+  document_mime?: string;
+  signature_status?: string;
   status?: string;
 }
+
