@@ -8,3 +8,5 @@ from app.models.audit import AuditLog
 from app.models.tender import Tender, TenderAuditLog
 from app.models.bid import Bid
 from app.models.contractor import Contractor
+from app.models.contract import Contract, WorkOrder, ContractAuditLog
+

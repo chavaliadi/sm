@@ -53,6 +53,9 @@ PERMISSIONS = [
     "MANAGE_TENDERS",
     "VIEW_BIDS",
     "MANAGE_BIDS",
+    "VIEW_CONTRACTS",       
+    "MANAGE_CONTRACTS",     
+    "MANAGE_WORK_ORDERS",
 ]
 
 ROLE_PERMISSIONS = {
@@ -69,10 +72,6 @@ ROLE_PERMISSIONS = {
         "VIEW_DASHBOARD",
         "VIEW_CLEARANCES",
         "MANAGE_CLEARANCES",
-        "VIEW_TENDERS",
-        "MANAGE_TENDERS",
-        "VIEW_BIDS",
-        "MANAGE_BIDS",
     ],
     "SMFCL": [
         "VIEW_PROJECTS",
@@ -86,6 +85,9 @@ ROLE_PERMISSIONS = {
         "VIEW_BIDS",
         "MANAGE_TENDERS",
         "MANAGE_BIDS",
+        "VIEW_CONTRACTS",
+        "MANAGE_CONTRACTS",
+        "MANAGE_WORK_ORDERS",
     ],
     "Ministry": [
         "VIEW_PROJECTS",

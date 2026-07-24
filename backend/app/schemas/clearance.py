@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Optional
 from enum import Enum
+from pydantic import field_validator
 from sqlmodel import SQLModel
 
 class ClearanceType(str, Enum):
@@ -29,6 +30,16 @@ class ClearanceCreate(SQLModel):
     document_url: Optional[str] = None
     remarks: Optional[str] = None
 
+    @field_validator("title", "authority_name", mode="before")
+    @classmethod
+    def validate_non_empty(cls, v: str) -> str:
+        if isinstance(v, str):
+            v_stripped = v.strip()
+            if not v_stripped:
+                raise ValueError("Field cannot be empty or whitespace only")
+            return v_stripped
+        return v
+
 class ClearanceUpdate(SQLModel):
     title: Optional[str] = None
     authority_name: Optional[str] = None
@@ -38,6 +49,16 @@ class ClearanceUpdate(SQLModel):
     expiry_date: Optional[datetime] = None
     document_url: Optional[str] = None
     remarks: Optional[str] = None
+
+    @field_validator("title", "authority_name", mode="before")
+    @classmethod
+    def validate_non_empty_optional(cls, v: Optional[str]) -> Optional[str]:
+        if isinstance(v, str):
+            v_stripped = v.strip()
+            if not v_stripped:
+                raise ValueError("Field cannot be empty or whitespace only")
+            return v_stripped
+        return v
 
 class ClearanceRead(SQLModel):
     id: int
@@ -63,4 +84,5 @@ class ClearanceExpirySummary(SQLModel):
     expired_count: int
     approved_count: int
     pending_count: int
+
 
