@@ -1,4 +1,4 @@
-﻿import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 import { AppLayout } from "../layouts/AppLayout";
 import { HomePage } from "../pages/HomePage";
 import { LoginPage } from "../pages/LoginPage";
@@ -7,12 +7,13 @@ import { DprsPage } from "../pages/DprsPage";
 import { StakeholdersPage } from "../pages/StakeholdersPage";
 import { MeetingsPage } from "../pages/MeetingsPage";
 import { TendersPage } from "../pages/TendersPage";
+import { ContractorPage } from "../features/contractors/ContractorPage";
 import { ClearancePage } from "../features/clearance/ClearancePage";
 import { TaskManagementPage } from "../features/tasks/TaskManagementPage";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 
 /**
- * Route table ΓÇö one place to see every page in the app. Protected routes
+ * Route table — one place to see every page in the app. Protected routes
  * require a valid access token in localStorage, redirecting to /login otherwise.
  */
 export const router = createBrowserRouter([
@@ -86,6 +87,16 @@ export const router = createBrowserRouter([
       <ProtectedRoute>
         <AppLayout>
           <TendersPage />
+        </AppLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/contractors",
+    element: (
+      <ProtectedRoute>
+        <AppLayout>
+          <ContractorPage />
         </AppLayout>
       </ProtectedRoute>
     ),

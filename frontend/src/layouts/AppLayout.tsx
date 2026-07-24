@@ -1,9 +1,9 @@
-﻿import type { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { logoutUser } from "@/api/auth";
 
 /**
- * Page shell ΓÇö sidebar + topbar + content area. Every module's pages render
+ * Page shell — sidebar + topbar + content area. Every module's pages render
  * inside this, so the app looks like one product instead of four different
  * ones. Real navigation items get added here once modules exist.
  */
@@ -46,6 +46,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
               className="block rounded-md px-2 py-1.5 font-medium hover:bg-gray-100 hover:text-gray-900"
             >
               Tasks
+            </Link>
+            <Link
+              to="/contractors"
+              className="block rounded-md px-2 py-1.5 font-medium hover:bg-gray-100 hover:text-gray-900"
+            >
+              Contractors
             </Link>
             <Link
               to="/stakeholders"
