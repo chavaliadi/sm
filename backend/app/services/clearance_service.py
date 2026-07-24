@@ -34,7 +34,9 @@ def list_clearances(
         thirty_days = now + timedelta(days=30)
         stmt = stmt.where(Clearance.expiry_date != None).where(Clearance.expiry_date >= now).where(Clearance.expiry_date <= thirty_days)
 
-    total = len(session.exec(stmt).all())
+    count_stmt = select(func.count()).select_from(stmt.subquery())
+    total = session.exec(count_stmt).one()
+
     stmt = stmt.order_by(Clearance.updated_at.desc()).offset((page - 1) * page_size).limit(page_size)
     results = session.exec(stmt).all()
     return list(results), total
@@ -66,6 +68,18 @@ def create_clearance(session: Session, clearance_in: ClearanceCreate, current_us
             },
         )
 
+    # Validate date range consistency
+    if clearance_in.expiry_date:
+        ref_date = clearance_in.approval_date or clearance_in.application_date
+        if ref_date and clearance_in.expiry_date < ref_date:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "code": "INVALID_DATE_RANGE",
+                    "message": "Expiry date cannot be prior to application or approval date",
+                },
+            )
+
     db_obj = Clearance(
         project_id=clearance_in.project_id,
         clearance_type=clearance_in.clearance_type.value if hasattr(clearance_in.clearance_type, "value") else str(clearance_in.clearance_type),
@@ -92,6 +106,22 @@ def update_clearance(
     session: Session, db_clearance: Clearance, clearance_in: ClearanceUpdate, current_user_id: int
 ) -> Clearance:
     update_data = clearance_in.model_dump(exclude_unset=True)
+
+    # Validate date range consistency on update
+    new_expiry = update_data.get("expiry_date", db_clearance.expiry_date)
+    new_approval = update_data.get("approval_date", db_clearance.approval_date)
+    new_application = update_data.get("application_date", db_clearance.application_date)
+    if new_expiry:
+        ref_date = new_approval or new_application
+        if ref_date and new_expiry < ref_date:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "code": "INVALID_DATE_RANGE",
+                    "message": "Expiry date cannot be prior to application or approval date",
+                },
+            )
+
     for field, value in update_data.items():
         if value is not None:
             if hasattr(value, "value"):
@@ -107,6 +137,7 @@ def update_clearance(
 
     _check_and_update_project_lifecycle_stage(session, db_clearance.project_id)
     return db_clearance
+
 
 def delete_clearance(session: Session, db_clearance: Clearance, current_user_id: int) -> Clearance:
     db_clearance.is_active = False
