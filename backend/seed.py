@@ -26,6 +26,8 @@ from app.models.dpr import DPR, DPRAuditLog
 from app.models.task import Task
 from app.models.stakeholder import Stakeholder, Meeting
 from app.models.notification import Notification
+from app.models.tender import Tender, TenderAuditLog
+from app.models.bid import Bid
 from app.core.security import hash_password
 import bootstrap_rbac
 
@@ -362,6 +364,106 @@ def seed_all():
             session.add(n)
         session.commit()
         print("  + Notifications seeded.")
+
+        # 8. Seed Tenders & Bids for SANCTIONED / UNDER_EXECUTION projects
+        print("\n[8/8] Seeding Tenders & Bids...")
+        tenders_def = [
+            {
+                "project_code": "SG-2026-003",
+                "tender_code": "TND-2026-003-01",
+                "title": "Paradip Coal Cargo Mechanization – Civil Works Contract",
+                "status": "PUBLISHED",
+                "bids": [
+                    {"bidder": "Larsen & Toubro Infrastructure", "tech": 88.5, "amount": 298_000_000},
+                    {"bidder": "Afcons Infrastructure Ltd", "tech": 82.0, "amount": 305_000_000},
+                ],
+                "awarded_bid_idx": None,
+            },
+            {
+                "project_code": "SG-2026-008",
+                "tender_code": "TND-2026-008-01",
+                "title": "Kamarajar Liquid Cargo Jetty – EPC Turnkey Contract",
+                "status": "PUBLISHED",
+                "bids": [
+                    {"bidder": "Tata Projects Limited", "tech": 91.0, "amount": 275_000_000},
+                    {"bidder": "NCC Limited", "tech": 85.5, "amount": 282_000_000},
+                ],
+                "awarded_bid_idx": None,
+            },
+            {
+                "project_code": "SG-2026-004",
+                "tender_code": "TND-2026-004-01",
+                "title": "Cochin Ro-Ro Waterway Terminal – Civil & Mechanical",
+                "status": "AWARDED",
+                "bids": [
+                    {"bidder": "KEC International", "tech": 94.0, "amount": 138_000_000},
+                    {"bidder": "Shapoorji Pallonji", "tech": 89.0, "amount": 141_500_000},
+                ],
+                "awarded_bid_idx": 0,  # KEC International won
+            },
+        ]
+
+        for tdef in tenders_def:
+            pid = proj_map.get(tdef["project_code"])
+            if not pid:
+                continue
+            existing_t = session.exec(
+                select(Tender).where(Tender.tender_code == tdef["tender_code"])
+            ).first()
+            if existing_t:
+                print(f"  . Tender '{tdef['tender_code']}' already exists.")
+                continue
+
+            tender = Tender(
+                project_id=pid,
+                tender_code=tdef["tender_code"],
+                title=tdef["title"],
+                status=tdef["status"],
+                created_by=pa_id,
+                updated_by=admin_id,
+                is_active=True,
+            )
+            session.add(tender)
+            session.commit()
+            session.refresh(tender)
+
+            # Audit log
+            session.add(TenderAuditLog(
+                tender_id=tender.id, actor_id=pa_id,
+                action="CREATED", new_status="DRAFT", comment="Tender created"
+            ))
+            session.add(TenderAuditLog(
+                tender_id=tender.id, actor_id=admin_id,
+                action="STATUS_CHANGED", old_status="DRAFT",
+                new_status=tdef["status"], comment=f"Moved to {tdef['status']}"
+            ))
+            session.commit()
+
+            # Seed bids
+            bid_objs = []
+            for biddata in tdef["bids"]:
+                bid = Bid(
+                    tender_id=tender.id,
+                    bidder_name=biddata["bidder"],
+                    technical_score=biddata["tech"],
+                    financial_amount=biddata["amount"],
+                    status="SUBMITTED",
+                    created_by=pa_id,
+                    is_active=True,
+                )
+                session.add(bid)
+                session.commit()
+                session.refresh(bid)
+                bid_objs.append(bid)
+
+            # If awarded, set the winning bid
+            if tdef["awarded_bid_idx"] is not None:
+                winning_bid = bid_objs[tdef["awarded_bid_idx"]]
+                tender.awarded_bid_id = winning_bid.id
+                session.add(tender)
+                session.commit()
+
+            print(f"  + Tender '{tdef['tender_code']}' ({tdef['status']}) with {len(tdef['bids'])} bids")
 
     print("\n==========================================================================")
     print("         MASTER SEED EXECUTION COMPLETED SUCCESSFULLY!                    ")

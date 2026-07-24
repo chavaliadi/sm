@@ -11,6 +11,64 @@ import {
 } from "@/api/dpr";
 import { getProjects } from "@/api/projects";
 import type { DPRRead, DPRAuditLogRead, ProjectRead } from "@/types";
+import { CheckCircle2, Circle, Loader2, XCircle } from "lucide-react";
+
+const DprWorkflowStepper = ({ status }: { status: string }) => {
+  const isMinistry = status === "FORWARDED_TO_MINISTRY" || status === "REJECTED_BY_MINISTRY" || status === "APPROVED" || status === "FUNDS_RELEASED";
+
+  // States: 0 = pending, 1 = active, 2 = done, 3 = rejected
+  const getStageState = (stageIndex: number) => {
+    if (stageIndex === 1) { // Port Nodal Officer
+      if (status === "DRAFT") return 1;
+      return 2;
+    }
+    if (stageIndex === 2) { // SMFCL
+      if (status === "DRAFT" || status === "SUBMITTED") return 0;
+      if (status === "SMFCL_REVIEW") return 1;
+      if (status === "REJECTED_BY_SMFCL") return 3;
+      return 2;
+    }
+    if (stageIndex === 3) { // Ministry
+      if (!isMinistry) return 0;
+      if (status === "FORWARDED_TO_MINISTRY") return 1;
+      if (status === "REJECTED_BY_MINISTRY") return 3;
+      return 2;
+    }
+    return 0;
+  };
+
+  const renderIcon = (state: number) => {
+    if (state === 0) return <Circle className="w-4 h-4 text-gray-300" />;
+    if (state === 1) return <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />;
+    if (state === 2) return <CheckCircle2 className="w-4 h-4 text-emerald-500" />;
+    if (state === 3) return <XCircle className="w-4 h-4 text-red-500" />;
+  };
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 min-w-[120px]">
+          {renderIcon(getStageState(1))}
+          <span className={`text-[10px] font-medium ${getStageState(1) ? "text-gray-900" : "text-gray-400"}`}>Port Officer</span>
+        </div>
+        <div className="w-4 h-[1px] bg-gray-200"></div>
+        <div className="flex items-center gap-1.5 min-w-[120px]">
+          {renderIcon(getStageState(2))}
+          <span className={`text-[10px] font-medium ${getStageState(2) ? "text-gray-900" : "text-gray-400"}`}>SMFCL</span>
+        </div>
+        <div className="w-4 h-[1px] bg-gray-200"></div>
+        <div className="flex items-center gap-1.5">
+          {renderIcon(getStageState(3))}
+          <span className={`text-[10px] font-medium ${getStageState(3) ? "text-gray-900" : "text-gray-400"}`}>Ministry</span>
+        </div>
+      </div>
+      <div className="mt-1">
+        <span className="text-[10px] font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{status.replace(/_/g, " ")}</span>
+      </div>
+    </div>
+  );
+};
+
 
 export function DprsPage() {
   const [dprs, setDprs] = useState<DPRRead[]>([]);
@@ -47,7 +105,7 @@ export function DprsPage() {
       console.error("Failed to load DPRs:", err);
       setError(
         err.response?.data?.error?.message ||
-          (err instanceof Error ? err.message : "Failed to load DPR workspace data.")
+        (err instanceof Error ? err.message : "Failed to load DPR workspace data.")
       );
     } finally {
       setLoading(false);
@@ -74,7 +132,7 @@ export function DprsPage() {
     } catch (err: any) {
       setCreateError(
         err.response?.data?.error?.message ||
-          (err instanceof Error ? err.message : "Failed to create DPR.")
+        (err instanceof Error ? err.message : "Failed to create DPR.")
       );
     } finally {
       setIsSubmitting(false);
@@ -246,24 +304,8 @@ export function DprsPage() {
                     <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-gray-600">
                       v{dpr.version}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3">
-                      <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${
-                          dpr.status === "DRAFT"
-                            ? "bg-gray-100 text-gray-800"
-                            : dpr.status === "SUBMITTED" || dpr.status === "SMFCL_REVIEW"
-                            ? "bg-amber-100 text-amber-800"
-                            : dpr.status.includes("REJECTED")
-                            ? "bg-red-100 text-red-800"
-                            : dpr.status === "FORWARDED_TO_MINISTRY"
-                            ? "bg-blue-100 text-blue-800"
-                            : dpr.status === "APPROVED"
-                            ? "bg-purple-100 text-purple-800"
-                            : "bg-emerald-100 text-emerald-800"
-                        }`}
-                      >
-                        {dpr.status}
-                      </span>
+                    <td className="px-4 py-3">
+                      <DprWorkflowStepper status={dpr.status} />
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-right space-x-2">
                       <button
@@ -474,11 +516,10 @@ export function DprsPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`rounded-md px-4 py-1.5 text-xs font-semibold text-white shadow-sm disabled:opacity-50 ${
-                    reviewDecision === "approve"
+                  className={`rounded-md px-4 py-1.5 text-xs font-semibold text-white shadow-sm disabled:opacity-50 ${reviewDecision === "approve"
                       ? "bg-emerald-700 hover:bg-emerald-800"
                       : "bg-red-700 hover:bg-red-800"
-                  }`}
+                    }`}
                 >
                   {isSubmitting ? "Submitting…" : "Submit Review"}
                 </button>
