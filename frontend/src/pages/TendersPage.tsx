@@ -14,41 +14,31 @@ const TENDER_STAGES = [
 function TenderWorkflowStepper({ currentStatus }: { currentStatus: string }) {
     const currentIndex = TENDER_STAGES.indexOf(currentStatus);
 
-    // To prevent the UI from being 14 dots wide, we can just show the current stage
-    // and a progress bar, or a mini-stepper showing 5 key phases:
-    // 1. DRAFT 2. PUBLISHED 3. BIDS 4. EVALUATION 5. AWARDED
-    let displayPhase = 0;
-    if (currentIndex >= TENDER_STAGES.indexOf("AWARDED")) displayPhase = 4;
-    else if (currentIndex >= TENDER_STAGES.indexOf("TECHNICAL_EVALUATION")) displayPhase = 3;
-    else if (currentIndex >= TENDER_STAGES.indexOf("BID_SUBMISSION")) displayPhase = 2;
-    else if (currentIndex >= TENDER_STAGES.indexOf("PUBLISHED")) displayPhase = 1;
-
-    const phases = [
-        { label: "Draft/Approval" },
-        { label: "Published" },
-        { label: "Bidding" },
-        { label: "Evaluation" },
-        { label: "Awarded/Closed" }
-    ];
-
     return (
-        <div className="flex flex-col gap-2">
-            <div className="text-[10px] font-bold text-sky-800 tracking-wider">
-                CURRENT STATE: {currentStatus.replace(/_/g, ' ')}
-            </div>
-            <div className="flex items-center gap-1 w-full max-w-sm">
-                {phases.map((phase, i) => {
-                    const isCompleted = i < displayPhase;
-                    const isCurrent = i === displayPhase;
+        <div className="flex flex-col gap-2 w-full max-w-xl">
+            <div className="flex items-center gap-1 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-200">
+                {TENDER_STAGES.map((stage, i) => {
+                    const isCompleted = i < currentIndex;
+                    const isCurrent = i === currentIndex;
+                    const label = stage.replace(/_/g, ' ');
+
                     return (
-                        <div key={phase.label} className="flex flex-col items-center flex-1">
-                            <div className={`h-1.5 w-full rounded ${isCompleted ? 'bg-sky-600' : isCurrent ? 'bg-sky-400' : 'bg-gray-200'}`} />
-                            <span className={`text-[9px] mt-1 text-center font-medium ${isCurrent ? 'text-sky-700' : 'text-gray-500'}`}>
-                                {phase.label}
+                        <div key={stage} className="flex flex-col items-center flex-shrink-0 w-20 min-w-0">
+                            <div className={`h-1.5 w-full rounded-full transition-colors ${isCompleted ? 'bg-sky-600' : isCurrent ? 'bg-amber-400 shadow-sm' : 'bg-gray-100'
+                                }`} />
+                            <span
+                                className={`text-[8.5px] mt-1.5 text-center font-bold tracking-tight truncate w-full px-1 ${isCurrent ? 'text-amber-700' : isCompleted ? 'text-sky-700' : 'text-gray-400'
+                                    }`}
+                                title={label}
+                            >
+                                {label}
                             </span>
                         </div>
                     );
                 })}
+            </div>
+            <div className="text-[10px] font-bold text-gray-500 tracking-widest uppercase">
+                Stage {currentIndex + 1} of 14: <span className="text-sky-700">{currentStatus.replace(/_/g, ' ')}</span>
             </div>
         </div>
     );
