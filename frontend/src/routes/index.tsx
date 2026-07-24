@@ -7,6 +7,7 @@ import { DprsPage } from "../pages/DprsPage";
 import { StakeholdersPage } from "../pages/StakeholdersPage";
 import { MeetingsPage } from "../pages/MeetingsPage";
 import { TendersPage } from "../pages/TendersPage";
+import { ClearancePage } from "../features/clearance/ClearancePage";
 import { TaskManagementPage } from "../features/tasks/TaskManagementPage";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 
@@ -85,6 +86,16 @@ export const router = createBrowserRouter([
       <ProtectedRoute>
         <AppLayout>
           <TendersPage />
+        </AppLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/clearances",
+    element: (
+      <ProtectedRoute>
+        <AppLayout>
+          <ClearancePage />
         </AppLayout>
       </ProtectedRoute>
     ),

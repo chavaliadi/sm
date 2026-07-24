@@ -60,6 +60,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
               Tenders & Bids
             </Link>
             <Link
+              to="/clearances"
+              className="block rounded-md px-2 py-1.5 font-medium hover:bg-gray-100 hover:text-gray-900"
+            >
+              Clearances
+            </Link>
+            <Link
               to="/meetings"
               className="block rounded-md px-2 py-1.5 font-medium hover:bg-gray-100 hover:text-gray-900"
             >
