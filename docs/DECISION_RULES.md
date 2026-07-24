@@ -172,6 +172,45 @@ module if the handoff shape isn't nailed down in advance.
 Do NOT let the `tender_id`/award payload shape change without telling the
 other module's owner.
 
+### D15. Tendering workflow is a 14-stage process, not the original 4-state placeholder
+
+**Decision:** The Tender status lifecycle is:
+DRAFT → INTERNAL_APPROVAL → PUBLISHED → CORRIGENDUM → BID_SUBMISSION →
+BID_CLOSING → TECHNICAL_EVALUATION → FINANCIAL_EVALUATION → FINAL_EVALUATION →
+APPROVAL → LOA_ISSUED → CONTRACT_GENERATED → AWARDED → CLOSED.
+Rejection/rework path: INTERNAL_APPROVAL can return to DRAFT.
+Bid evaluation includes automatic L1/L2/L3 ranking based on financial amount.
+Award sets `tenders.awarded_bid_id` (FK to the winning bid) — this is the
+field Module 4 (Contracts) depends on per D14.
+**Rationale:** The original plan specified a simplified 4-state placeholder
+(Draft → Published → Under Evaluation → Awarded) before the actual RFP
+scope for Tendering & Bid Evaluation was reviewed in detail. The 14-stage
+version was built deliberately, matches the RFP's tender/evaluation
+requirements more precisely, and is verified working end to end — this
+supersedes the earlier 4-state description in the Phase 2 handbooks.
+**Do NOT:** revert to the 4-state model, or design Contract/Work Order logic
+against anything other than the real 14-stage status list above.
+
+### D16. A module never writes to another module's tables, even for "sync" purposes
+
+**Decision:** Each module's service layer only reads and writes its own
+tables. If one module's data needs to react to a change in another
+module (e.g. a DPR status responding to a project stage change), that
+integration is a deliberate, reviewed decision — not something a module
+owner adds unilaterally inside their own service file.
+**Rationale:** An earlier Phase 2 change added logic inside
+`services/projects.py` (Project Configuration's file) that directly
+imported and force-updated `DPR` records whenever a project's
+`lifecycle_stage` changed — bypassing the actual SMFCL/Ministry review
+chain required by the RFP (section 4.6.1: "configurable multi-level
+routing... with a complete audit trail of submissions, approvals and
+rejections"). This was caught and removed before merge, but the pattern
+is worth naming explicitly so it isn't reintroduced by a different module.
+**Do NOT:** import another module's models into your service file to
+"keep them in sync." If a real cross-module trigger is needed, it goes
+through the Integration Lead as a reviewed, explicit design decision —
+not a side effect buried in an unrelated update function.
+
 ---
 
 ## Adding a new decision
