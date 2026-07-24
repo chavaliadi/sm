@@ -33,12 +33,12 @@ export function ClearanceFormDialog({ open, onOpenChange, onSuccess, projects }:
       await createClearance({
         project_id: parseInt(projectId, 10),
         clearance_type: clearanceType,
-        title,
-        authority_name: authorityName,
+        title: title.trim(),
+        authority_name: authorityName.trim(),
         status,
         expiry_date: expiryDate ? new Date(expiryDate).toISOString() : undefined,
         document_url: documentUrl.trim() || undefined,
-        remarks: remarks || undefined,
+        remarks: remarks.trim() || undefined,
       });
       onSuccess();
       onOpenChange(false);
