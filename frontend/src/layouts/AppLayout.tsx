@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { logoutUser } from "@/api/auth";
+import { NotificationsPanel } from "@/features/notifications/NotificationsPanel";
 
 /**
  * Page shell — sidebar + topbar + content area. Every module's pages render
@@ -96,7 +97,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
             Sagarmala 2.0 MVP Portal
           </span>
           <div className="flex items-center gap-4">
-            <span className="text-xs text-gray-400">Phase 1 (Appraisal & Sanction)</span>
+            <span className="text-xs text-gray-400">Phase 1 & Phase 2</span>
+            <NotificationsPanel />
             <button
               onClick={handleLogout}
               className="text-xs text-gray-500 hover:text-gray-800 font-medium"
