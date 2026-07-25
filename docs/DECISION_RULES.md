@@ -211,6 +211,30 @@ is worth naming explicitly so it isn't reintroduced by a different module.
 through the Integration Lead as a reviewed, explicit design decision —
 not a side effect buried in an unrelated update function.
 
+### D17. Phase 2 activity is not gated behind Phase 1 DPR completion — deliberately
+
+**Decision:** Clearances and Tenders can be created and progressed for a
+project regardless of that project's DPR status (DRAFT, SUBMITTED, or
+even before a DPR exists at all). There is no validation in
+`clearance_service.py` or `tender_service.py` requiring
+`project.dpr.status == "APPROVED"` or `"FUNDS_RELEASED"` before Phase 2
+work can begin.
+**Rationale:** In real infrastructure project delivery, land/statutory
+clearances and tender preparation legitimately start in parallel with
+DPR review, not strictly after it — clearances in particular often take
+months and starting them only after DPR approval would make the overall
+timeline slower and less realistic, not more correct. Confirmed via live
+testing (regression suite, Part C) that the system currently allows this
+today; this entry formalizes it as an intentional choice rather than
+leaving it as an undocumented gap.
+**Do NOT:** silently add a cross-phase gate to "fix" this without a
+deliberate decision to do so. If a future requirement genuinely needs
+DPR approval as a hard prerequisite for Phase 2 activity, that's a new
+decision to make explicitly (and would need client/RFP confirmation
+first, since the RFP's own phase description doesn't mandate strict
+sequential gating either) — not something to infer from this gap and
+build unprompted.
+
 ---
 
 ## Adding a new decision
