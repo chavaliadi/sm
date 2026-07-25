@@ -135,3 +135,18 @@ def delete_task(
 ):
     task = task_service.soft_delete_task(session, task_id)
     return SuccessResponse(data=TaskRead.model_validate(task))
+
+
+@router.post("/check-reminders", response_model=SuccessResponse[dict])
+def check_task_reminders(
+    threshold_days: int = Query(default=3, ge=1, le=30),
+    session: Session = Depends(get_session),
+    _: object = Depends(require_permission("MANAGE_TASKS")),
+):
+    created = task_service.check_task_due_reminders(session, threshold_days=threshold_days)
+    return SuccessResponse(
+        data={
+            "message": f"Checked task due reminders. Created {len(created)} new notifications.",
+            "created_count": len(created),
+        }
+    )
