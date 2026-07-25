@@ -234,29 +234,30 @@ is worth naming explicitly so it isn't reintroduced by a different module.
 through the Integration Lead as a reviewed, explicit design decision —
 not a side effect buried in an unrelated update function.
 
-### D17. Phase 2 activity is not gated behind Phase 1 DPR completion — deliberately
+### D17-REVISED. Phase 2 progresses in parallel with DPR review, EXCEPT at the point of financial commitment (amends D17)
 
-**Decision:** Clearances and Tenders can be created and progressed for a
-project regardless of that project's DPR status (DRAFT, SUBMITTED, or
-even before a DPR exists at all). There is no validation in
-`clearance_service.py` or `tender_service.py` requiring
-`project.dpr.status == "APPROVED"` or `"FUNDS_RELEASED"` before Phase 2
-work can begin.
-**Rationale:** In real infrastructure project delivery, land/statutory
-clearances and tender preparation legitimately start in parallel with
-DPR review, not strictly after it — clearances in particular often take
-months and starting them only after DPR approval would make the overall
-timeline slower and less realistic, not more correct. Confirmed via live
-testing (regression suite, Part C) that the system currently allows this
-today; this entry formalizes it as an intentional choice rather than
-leaving it as an undocumented gap.
-**Do NOT:** silently add a cross-phase gate to "fix" this without a
-deliberate decision to do so. If a future requirement genuinely needs
-DPR approval as a hard prerequisite for Phase 2 activity, that's a new
-decision to make explicitly (and would need client/RFP confirmation
-first, since the RFP's own phase description doesn't mandate strict
-sequential gating either) — not something to infer from this gap and
-build unprompted.
+**Original D17:** Clearances and tenders can be created and progressed
+for a project regardless of DPR status, matching real infrastructure
+practice.
+**Revision:** This still holds for all tender stages up through
+CONTRACT_GENERATED — drafting, publishing, bid submission, technical and
+financial evaluation can all run fully in parallel with DPR review. The
+one exception: a tender cannot transition to AWARDED unless the
+project's DPR status is APPROVED or FUNDS_RELEASED. Enforced in
+tender_service.py's update_tender() with a DPR lookup gate specifically
+on the AWARDED transition, returning DPR_NOT_APPROVED (400) if the DPR
+isn't ready.
+**Rationale:** Flagged by Shashank — AWARDED represents the moment the
+government becomes legally and financially committed to a specific
+vendor at a specific price. Allowing that commitment before the Ministry
+has actually sanctioned and funded the project creates real legal and
+financial exposure. This preserves the time-saving benefit of D17 (the
+lengthy tender/evaluation process doesn't wait on DPR approval) while
+closing the one moment where parallelism becomes genuinely risky rather
+than just efficient.
+**Do NOT:** apply this gate to any earlier tender stage — only AWARDED.
+Blocking earlier stages would defeat the entire point of D17 and
+reintroduce the delay it was meant to solve.
 
 ### D18. react-router-dom pinned at 7.18.1 despite one known CVE — accepted risk
 
