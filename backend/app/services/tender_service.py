@@ -98,7 +98,7 @@ def update_tender(session: Session, db_tender: Tender, tender_in: TenderUpdate, 
         old_status = db_tender.status
         db_tender.status = tender_in.status
 
-        # When awarding, require the winning bid
+        # When awarding, set the winning bid
         if tender_in.status == "AWARDED" and tender_in.awarded_bid_id:
             db_tender.awarded_bid_id = tender_in.awarded_bid_id
 
@@ -111,6 +111,17 @@ def update_tender(session: Session, db_tender: Tender, tender_in: TenderUpdate, 
             session, db_tender.id, current_user_id, "STATUS_CHANGED",
             old_status=old_status, new_status=tender_in.status,
             comment=f"Status changed to {tender_in.status}"
+        )
+
+    # Safeguard: awarded_bid_id can only be non-null when status is AWARDED (or CLOSED after award)
+    if tender_in.awarded_bid_id is not None and db_tender.status not in ("AWARDED", "CLOSED"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "INVALID_AWARD_STATE",
+                "message": f"awarded_bid_id cannot be set when tender status is '{db_tender.status}'. Must be 'AWARDED'.",
+                "field": "awarded_bid_id",
+            }
         )
 
     # Update all other fields if provided

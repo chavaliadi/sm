@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { getProjects, createProject, updateProject, deleteProject } from "@/api/projects";
 import type { ProjectRead, ProjectCreate, ProjectUpdate } from "@/types";
 
@@ -334,7 +335,12 @@ export function ProjectsPage() {
                 {projects.map((project) => (
                   <tr key={project.id} className="hover:bg-gray-50">
                     <td className="whitespace-nowrap px-4 py-3 font-mono text-xs font-semibold text-sky-800">
-                      {project.project_code}
+                      <Link
+                        to={`/projects/${project.id}`}
+                        className="hover:underline"
+                      >
+                        {project.project_code}
+                      </Link>
                     </td>
                     <td className="px-4 py-3">
                       <div className="font-semibold text-gray-900">{project.name}</div>

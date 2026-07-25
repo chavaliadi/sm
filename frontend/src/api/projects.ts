@@ -38,3 +38,9 @@ export async function deleteProject(id: number): Promise<ProjectRead> {
   const response = await apiClient.delete<SuccessResponse<ProjectRead>>(`/projects/${id}`);
   return response.data.data;
 }
+
+export async function getProjectDetail(id: number): Promise<Record<string, unknown>> {
+  const response = await apiClient.get<SuccessResponse<Record<string, unknown>>>(`/projects/${id}/detail`);
+  return response.data.data;
+}
+
