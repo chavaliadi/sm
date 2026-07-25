@@ -17,8 +17,9 @@ import { getClearances } from "@/features/clearance/api";
 import { getTenders } from "@/api/tender";
 import { getContracts } from "@/features/contracts/api";
 import { getContractors } from "@/features/contractors/api";
-import type { ProjectRead } from "@/types";
+import type { ProjectRead, TenderRead } from "@/types";
 import type { TaskRead } from "@/types/task";
+import type { Clearance } from "@/features/clearance/types";
 
 const PIE_COLORS = {
   TODO: "#64748b",
@@ -29,15 +30,20 @@ const PIE_COLORS = {
 export function HomePage() {
   const [projects, setProjects] = useState<ProjectRead[]>([]);
   const [tasks, setTasks] = useState<TaskRead[]>([]);
+  const [tendersList, setTendersList] = useState<TenderRead[]>([]);
+  const [clearancesList, setClearancesList] = useState<Clearance[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Phase 2 KPI state
+  // Phase 2 KPI state & per-chart error flags
   const [pendingClearances, setPendingClearances] = useState<number | null>(null);
   const [pendingClearancesError, setPendingClearancesError] = useState(false);
+  const [clearancesChartError, setClearancesChartError] = useState(false);
 
   const [activeTenders, setActiveTenders] = useState<number | null>(null);
   const [activeTendersError, setActiveTendersError] = useState(false);
+  const [tendersChartError, setTendersChartError] = useState(false);
 
   const [contractsInProgress, setContractsInProgress] = useState<number | null>(null);
   const [contractsInProgressError, setContractsInProgressError] = useState(false);
@@ -66,28 +72,39 @@ export function HomePage() {
       setLoading(false);
     }
 
-    // Fetch Phase 2 KPI Cards independently with per-card error handling
-    // 1. Pending Clearances
+    // Fetch Phase 2 Datasets & KPI Cards independently with per-card/chart error handling
+    // 1. Clearances (KPI card + Pie Chart)
     try {
-      const clrRes = await getClearances({ status: "PENDING", page: 1, page_size: 100 });
-      setPendingClearances(clrRes.meta.total);
+      const clrRes = await getClearances({ page: 1, page_size: 100 });
+      const allClearances = clrRes.data || [];
+      setClearancesList(allClearances);
+
+      const pendingCount = allClearances.filter((c) => c.status === "PENDING").length;
+      setPendingClearances(pendingCount);
       setPendingClearancesError(false);
+      setClearancesChartError(false);
     } catch (err) {
-      console.error("Pending clearances fetch error:", err);
+      console.error("Clearances fetch error:", err);
       setPendingClearancesError(true);
+      setClearancesChartError(true);
     }
 
-    // 2. Active Tenders (status != AWARDED and status != CLOSED)
+    // 2. Tenders (KPI card + Bar Chart)
     try {
       const tndRes = await getTenders(1, 100);
-      const activeCount = (tndRes.data || []).filter(
+      const allTenders = tndRes.data || [];
+      setTendersList(allTenders);
+
+      const activeCount = allTenders.filter(
         (t) => t.status !== "AWARDED" && t.status !== "CLOSED"
       ).length;
       setActiveTenders(activeCount);
       setActiveTendersError(false);
+      setTendersChartError(false);
     } catch (err) {
       console.error("Active tenders fetch error:", err);
       setActiveTendersError(true);
+      setTendersChartError(true);
     }
 
     // 3. Contracts In Progress (status ACTIVE or ISSUED)
@@ -133,7 +150,7 @@ export function HomePage() {
     };
   }, [projects, tasks]);
 
-  // Bar Chart: Project Count by Lifecycle Stage
+  // Bar Chart 1: Project Count by Lifecycle Stage
   const projectStageData = useMemo(() => {
     const stages = [
       { key: "INITIATION", label: "Initiation" },
@@ -155,7 +172,25 @@ export function HomePage() {
     }));
   }, [projects]);
 
-  // Pie Chart: Task Status Breakdown
+  // Bar Chart 2: Tender Pipeline by Status
+  const tenderStatusData = useMemo(() => {
+    const stages = [
+      { key: "DRAFT", label: "Draft" },
+      { key: "PUBLISHED", label: "Published" },
+      { key: "BID_SUBMISSION", label: "Bidding" },
+      { key: "TECHNICAL_EVALUATION", label: "Tech Eval" },
+      { key: "FINANCIAL_EVALUATION", label: "Fin Eval" },
+      { key: "AWARDED", label: "Awarded" },
+      { key: "CLOSED", label: "Closed" },
+    ];
+
+    return stages.map((st) => ({
+      status: st.label,
+      count: tendersList.filter((t) => t.status === st.key).length,
+    }));
+  }, [tendersList]);
+
+  // Pie Chart 1: Task Status Breakdown
   const taskStatusData = useMemo(() => {
     const statuses = [
       { key: "TODO", label: "To Do", color: PIE_COLORS.TODO },
@@ -170,6 +205,22 @@ export function HomePage() {
       color: st.color,
     }));
   }, [tasks]);
+
+  // Pie Chart 2: Statutory Clearance Status Breakdown
+  const clearanceStatusData = useMemo(() => {
+    const statuses = [
+      { key: "APPROVED", label: "Approved", color: "#10b981" },
+      { key: "PENDING", label: "Pending", color: "#f59e0b" },
+      { key: "REJECTED", label: "Rejected", color: "#ef4444" },
+    ];
+
+    return statuses.map((st) => ({
+      name: st.label,
+      status: st.key,
+      count: clearancesList.filter((c) => c.status === st.key).length,
+      color: st.color,
+    }));
+  }, [clearancesList]);
 
   if (loading) {
     return (
@@ -310,101 +361,213 @@ export function HomePage() {
         </div>
       </div>
 
-      {/* Charts Section: Exactly 1 Bar Chart + 1 Pie Chart */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Bar Chart: Projects by Lifecycle Stage */}
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-gray-900">
-            Project Count by Lifecycle Stage
-          </h2>
-          <p className="text-xs text-gray-500">
-            Distribution of projects across appraisal and execution stages
-          </p>
-          <div className="mt-4 h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={projectStageData}
-                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-              >
-                <XAxis
-                  dataKey="stage"
-                  tick={{ fontSize: 11, fill: "#64748b" }}
-                  interval={0}
-                />
-                <YAxis
-                  allowDecimals={false}
-                  tick={{ fontSize: 11, fill: "#64748b" }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#ffffff",
-                    borderColor: "#e2e8f0",
-                    borderRadius: "0.375rem",
-                    fontSize: "0.75rem",
-                  }}
-                />
-                <Bar
-                  dataKey="count"
-                  name="Projects"
-                  fill="#0284c7"
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+      {/* Charts Section: 2 Bar Charts + 2 Pie Charts */}
+      <div className="space-y-6">
+        {/* Chart Row 1: Portfolio Stage & Task Breakdown */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Bar Chart 1: Projects by Lifecycle Stage */}
+          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <h2 className="text-base font-semibold text-gray-900">
+              Project Count by Lifecycle Stage
+            </h2>
+            <p className="text-xs text-gray-500">
+              Distribution of projects across appraisal and execution stages
+            </p>
+            <div className="mt-4 h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={projectStageData}
+                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                >
+                  <XAxis
+                    dataKey="stage"
+                    tick={{ fontSize: 11, fill: "#64748b" }}
+                    interval={0}
+                  />
+                  <YAxis
+                    allowDecimals={false}
+                    tick={{ fontSize: 11, fill: "#64748b" }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#ffffff",
+                      borderColor: "#e2e8f0",
+                      borderRadius: "0.375rem",
+                      fontSize: "0.75rem",
+                    }}
+                  />
+                  <Bar
+                    dataKey="count"
+                    name="Projects"
+                    fill="#0284c7"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Pie Chart 1: Task Status Breakdown */}
+          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <h2 className="text-base font-semibold text-gray-900">
+              Task Status Breakdown
+            </h2>
+            <p className="text-xs text-gray-500">
+              Current status distribution across active project tasks
+            </p>
+            <div className="mt-4 h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={taskStatusData}
+                    dataKey="count"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={45}
+                    outerRadius={75}
+                    paddingAngle={3}
+                    label={({ name, value }) =>
+                      typeof value === "number" && value > 0
+                        ? `${name}: ${value}`
+                        : ""
+                    }
+                  >
+                    {taskStatusData.map((entry) => (
+                      <Cell key={entry.status} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#ffffff",
+                      borderColor: "#e2e8f0",
+                      borderRadius: "0.375rem",
+                      fontSize: "0.75rem",
+                    }}
+                  />
+                  <Legend
+                    verticalAlign="bottom"
+                    height={36}
+                    iconType="circle"
+                    formatter={(value: string) => (
+                      <span className="text-xs text-gray-600">{value}</span>
+                    )}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 
-        {/* Pie Chart: Task Status Breakdown */}
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-gray-900">
-            Task Status Breakdown
-          </h2>
-          <p className="text-xs text-gray-500">
-            Current status distribution across active project tasks
-          </p>
-          <div className="mt-4 h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={taskStatusData}
-                  dataKey="count"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={45}
-                  outerRadius={75}
-                  paddingAngle={3}
-                  label={({ name, value }) =>
-                    typeof value === "number" && value > 0
-                      ? `${name}: ${value}`
-                      : ""
-                  }
-                >
-                  {taskStatusData.map((entry) => (
-                    <Cell key={entry.status} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#ffffff",
-                    borderColor: "#e2e8f0",
-                    borderRadius: "0.375rem",
-                    fontSize: "0.75rem",
-                  }}
-                />
-                <Legend
-                  verticalAlign="bottom"
-                  height={36}
-                  iconType="circle"
-                  formatter={(value: string) => (
-                    <span className="text-xs text-gray-600">{value}</span>
-                  )}
-                />
-                </PieChart>
-            </ResponsiveContainer>
+        {/* Chart Row 2: Tender Pipeline & Statutory Clearance Breakdown */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Bar Chart 2: Tender Pipeline by Status */}
+          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <h2 className="text-base font-semibold text-gray-900">
+              Tender Pipeline by Status
+            </h2>
+            <p className="text-xs text-gray-500">
+              Distribution of tenders across procurement stages
+            </p>
+            <div className="mt-4 h-64 w-full">
+              {tendersChartError ? (
+                <div className="flex h-full items-center justify-center text-xs font-medium text-red-600">
+                  Error loading tender pipeline chart
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={tenderStatusData}
+                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                  >
+                    <XAxis
+                      dataKey="status"
+                      tick={{ fontSize: 11, fill: "#64748b" }}
+                      interval={0}
+                    />
+                    <YAxis
+                      allowDecimals={false}
+                      tick={{ fontSize: 11, fill: "#64748b" }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#ffffff",
+                        borderColor: "#e2e8f0",
+                        borderRadius: "0.375rem",
+                        fontSize: "0.75rem",
+                      }}
+                    />
+                    <Bar
+                      dataKey="count"
+                      name="Tenders"
+                      fill="#6366f1"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+
+          {/* Pie Chart 2: Statutory Clearance Status Breakdown */}
+          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <h2 className="text-base font-semibold text-gray-900">
+              Statutory Clearance Status
+            </h2>
+            <p className="text-xs text-gray-500">
+              Compliance status distribution across registered project clearances
+            </p>
+            <div className="mt-4 h-64 w-full">
+              {clearancesChartError ? (
+                <div className="flex h-full items-center justify-center text-xs font-medium text-red-600">
+                  Error loading clearance status chart
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={clearanceStatusData}
+                      dataKey="count"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={45}
+                      outerRadius={75}
+                      paddingAngle={3}
+                      label={({ name, value }) =>
+                        typeof value === "number" && value > 0
+                          ? `${name}: ${value}`
+                          : ""
+                      }
+                    >
+                      {clearanceStatusData.map((entry) => (
+                        <Cell key={entry.status} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#ffffff",
+                        borderColor: "#e2e8f0",
+                        borderRadius: "0.375rem",
+                        fontSize: "0.75rem",
+                      }}
+                    />
+                    <Legend
+                      verticalAlign="bottom"
+                      height={36}
+                      iconType="circle"
+                      formatter={(value: string) => (
+                        <span className="text-xs text-gray-600">{value}</span>
+                      )}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
 }
+

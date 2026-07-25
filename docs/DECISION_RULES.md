@@ -30,14 +30,26 @@ is_active = true`.
 (is a null-vs-set check, timezone handling) an MVP doesn't need.
 **Do NOT:** add a `deleted_at` column to any table, or hard-delete rows.
 
-### D3. Notifications are backend-only for this MVP
+### D3-REVISED. Notifications now have a frontend UI (amends D3)
 
-**Decision:** `notifications` table + `create_notification()` service
-function + `GET /notifications` endpoint. No inbox/bell UI.
-**Rationale:** Having the plumbing means the UI is a pure frontend task
-later, not a schema change. Building UI for it now is unscoped work.
-**Do NOT:** build a notification bell, toast system, or inbox page unless
-explicitly asked.
+**Original D3:** Notifications were backend-only for the MVP — table,
+create_notification() service function, GET /notifications endpoint,
+no UI.
+**Revision:** A frontend UI was added — a bell icon with an unread-count
+badge in AppLayout.tsx, and a dropdown panel
+(frontend/src/features/notifications/NotificationsPanel.tsx) listing
+notifications with dismiss (delete) actions.
+**Important limitation, stated explicitly:** there is no mark-as-read
+endpoint. Every notification is inserted with read=False and nothing in
+the backend ever sets it to True. The only user action is dismiss
+(DELETE /notifications/{id}), which removes the row entirely. This
+means the system currently functions as a dismissible activity feed,
+not a true read/unread inbox — the badge counts undismissed
+notifications, not "unread" in the conventional sense.
+**Do NOT:** assume a mark-as-read endpoint exists when building anything
+that depends on it. If genuine read/unread tracking becomes a
+requirement, that's a small addition (a PATCH endpoint + a read
+boolean toggle) — not currently built.
 
 ### D4. Meetings has no `action_items` field
 
