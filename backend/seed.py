@@ -58,6 +58,8 @@ def seed_all():
             ("SMFCL Lead Appraiser", "smfcl1@sagarmala.gov.in", "password123", "SMFCL"),
             ("SMFCL Financial Analyst", "smfcl2@sagarmala.gov.in", "password123", "SMFCL"),
             ("Ministry Joint Secretary", "ministry@sagarmala.gov.in", "password123", "Ministry"),
+            ("Tender Officer", "tender_creator@sagarmala.gov.in", "password123", "Tender Creator"),
+            ("Infrastructure Bidder", "bidder1@sagarmala.gov.in", "password123", "Bidder"),
         ]
         user_map = {}
         for name, email, password, role_name in users_def:

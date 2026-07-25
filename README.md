@@ -1,10 +1,10 @@
-# Sagarmala 2.0 Portal (MVP Project Plan and Scaffold)
+# Sagarmala 2.0 Portal (MVP Portal)
 
-The **Sagarmala 2.0 Portal** is a full stack web application designed for the Ministry of Ports, Shipping and Waterways (MoPSW) and the Sagarmala Development Company Limited (SMFCL) to manage, appraise, and approve port led infrastructure projects.
+The **Sagarmala 2.0 Portal** is a full-stack web application designed for the Ministry of Ports, Shipping and Waterways (MoPSW) and the Sagarmala Development Company Limited (SMFCL) to manage, appraise, approve, and execute port-led infrastructure projects across India.
 
-This repository contains the working full stack application: **FastAPI backend** (SQLModel + PostgreSQL) + **Vite / React / TypeScript / Tailwind CSS** frontend, preloaded with the base database schema, standard API envelopes, global error handling, authentication, and feature modules.
+This repository contains an **MVP, fully verified full-stack web application**: **FastAPI backend** (SQLModel + PostgreSQL) + **Vite / React / TypeScript / Tailwind CSS** frontend, preloaded with comprehensive database schemas, standard API envelopes, global error handling, RBAC permission authorization, feature modules, master seed datasets, and executive MIS dashboards.
 
-**Current status:** Phase 1 (Appraisal & Sanction) is **complete and live-verified end-to-end**, tagged `phase1-mvp-complete` on `main`. Phase 2 (Pre-Construction) is **in progress** on `develop`.
+**Current Status:** Both **Phase 1 (Appraisal & Sanction)** and **Phase 2 (Pre-Construction & Procurement)** are **100% complete, integrated, and live-verified end-to-end**.
 
 ---
 
@@ -12,154 +12,184 @@ This repository contains the working full stack application: **FastAPI backend**
 
 Sagarmala 2.0 is a flagship initiative of the Government of India under the **Viksit Bharat 2047** mission, focusing on port modernization, maritime industrialization, shipbuilding, coastal community development, multimodal connectivity, and sustainable maritime practices.
 
-The complete RFP describes a large system comprising 26+ modules, mobile apps, drone/satellite media integration, and PFMS integration.
-
-**Phase 1 (15–20 days) focused on Appraisal and Sanction only** — the core proposal and approval loop, showing how a project proposal flows transparently across Port Authorities, SMFCL, and the Ministry, supported by a rigorous audit trail and real-time dashboard analytics.
-
-**Phase 2 (Pre-Construction)**, now underway, builds what happens after a DPR is approved and before construction begins: land and statutory clearances, the tender process, and contractor onboarding/contracting. Full detail in `Sagarmala_Phase2_PreConstruction_Module_Assignment.docx` and the Phase 2 team handbooks in `docs/team/`.
+The portal covers the complete lifecycle of port-led infrastructure delivery:
+* **Phase 1 (Appraisal & Sanction):** Proposal submission by Port Authorities, DPR technical & financial appraisal by SMFCL, Ministry final sanctioning, fund disbursement tracking, and full audit logging.
+* **Phase 2 (Pre-Construction & Procurement):** Statutory clearances tracking, end-to-end tendering & bid evaluation, contractor registration & empanelment, contract execution, and work order management.
 
 ---
 
-## 2. Core Workflow and State Machine (Phase 1)
+## 2. Core Workflows and State Machines
 
-The core feature of the portal is the **DPR (Detailed Project Report) Submission and Approval Workflow**.
-A DPR transitions through the following states in a strict, audited state machine:
+### 2.1 DPR Submission & Approval State Machine (Phase 1)
+A Detailed Project Report (DPR) transitions through an 8-state audited lifecycle:
 
 ```mermaid
 stateDiagram-v2
     [*] --> DRAFT : Port Authority creates DPR
     DRAFT --> SUBMITTED : Port Authority submits DPR
-    DRAFT --> [*] : Soft Delete (Only allowed in DRAFT)
+    DRAFT --> [*] : Soft Delete (DRAFT only)
 
     SUBMITTED --> SMFCL_REVIEW : SMFCL receives proposal
 
-    SMFCL_REVIEW --> REJECTED_BY_SMFCL : SMFCL Rejects (with observations)
+    SMFCL_REVIEW --> REJECTED_BY_SMFCL : SMFCL Rejects (with comments)
     REJECTED_BY_SMFCL --> SUBMITTED : Port Authority resubmits (version increments)
 
     SMFCL_REVIEW --> FORWARDED_TO_MINISTRY : SMFCL Recommends & forwards
 
-    FORWARDED_TO_MINISTRY --> REJECTED_BY_MINISTRY : Ministry Rejects (to SMFCL)
-    REJECTED_BY_MINISTRY --> SMFCL_REVIEW : SMFCL reviews / requests changes from Port
+    FORWARDED_TO_MINISTRY --> REJECTED_BY_MINISTRY : Ministry Rejects
+    REJECTED_BY_MINISTRY --> SMFCL_REVIEW : SMFCL reviews / requests updates from Port
 
     FORWARDED_TO_MINISTRY --> APPROVED : Ministry grants final approval
 
-    APPROVED --> FUNDS_RELEASED : SMFCL marks funds released (completion)
+    APPROVED --> FUNDS_RELEASED : SMFCL releases funds (sanction complete)
 ```
 
-### Transition Integrity and Auditing
-1. **Audit Logs:** Every status transition writes a row to `dpr_audit_log` capturing the **actor, action, old status, new status, timestamp, and review comments**.
-2. **Immutability:** Once a DPR leaves the `DRAFT` state, it is read only for the Port Authority. It cannot be deleted or modified outside of formal resubmission loops.
-3. **Soft Delete:** A DPR can only be soft deleted (`is_active = false`) while it remains a `DRAFT`.
-4. **Notifications:** Fired (backend-only, no UI per D3) on rejection, approval, and funds-released transitions.
+### 2.2 Tender & Bid Lifecycle State Machine (Phase 2)
+Tenders follow a 14-stage sequential state machine with integrated bid submission and multi-factor evaluation:
+
+```mermaid
+stateDiagram-v2
+    [*] --> DRAFT : Create Tender
+    DRAFT --> INTERNAL_APPROVAL : Submit for Internal Review
+    INTERNAL_APPROVAL --> PUBLISHED : Publish Tender
+    PUBLISHED --> CORRIGENDUM : Issue Corrigendum (Optional)
+    CORRIGENDUM --> BID_SUBMISSION : Resume Bidding
+    PUBLISHED --> BID_SUBMISSION : Open Bidding Window
+    BID_SUBMISSION --> BID_CLOSING : Bidding Deadline Reached
+    BID_CLOSING --> TECHNICAL_EVALUATION : Evaluate Technical Bids
+    TECHNICAL_EVALUATION --> FINANCIAL_EVALUATION : Rank Financial Bids (L1/L2/L3)
+    FINANCIAL_EVALUATION --> FINAL_EVALUATION : Select Winning Bidder
+    FINAL_EVALUATION --> APPROVAL : Tender Committee Sanction
+    APPROVAL --> LOA_ISSUED : Issue Letter of Award (LOA)
+    LOA_ISSUED --> CONTRACT_GENERATED : Draft Contract Package
+    CONTRACT_GENERATED --> AWARDED : Final Award (links awarded_bid_id)
+    AWARDED --> CLOSED : Tender Concluded
+```
+
+### 2.3 Contract & Work Order State Machine (Phase 2)
+Contracts enforce the **D14 rule** (cannot be created against un-awarded tenders):
+* **Contract Statuses:** `DRAFT` → `ISSUED` → `ACTIVE` → `CLOSED`
+* **Work Order Statuses:** `DRAFT` → `ISSUED` → `IN_PROGRESS` → `COMPLETED` / `CANCELLED`
+
+### 2.4 Contractor Empanelment State Machine (Phase 2)
+Contractors follow a strict 3-stage onboarding workflow:
+* **Contractor Statuses:** `Registered` → `Verified` → `Empanelled`
+* **Transition Rules:** Direct jumps (e.g. `Registered` → `Empanelled`) are blocked with `HTTP 400 INVALID_STATUS_TRANSITION`.
 
 ---
 
 ## 3. Technology Stack and Architecture
 
-The application implements a clean, decoupled **Layered Architecture** designed to scale:
+The application implements a clean, decoupled **Layered Architecture**:
 
 ```
 ┌────────────────────────────────────────────────────────┐
 │  Presentation Layer (Frontend)                         │
-│  React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui   │
+│  React 19 + TypeScript + Tailwind CSS v4 + Lucide Icons│
 └────────────────────────────────────────────────────────┘
                            │
                            │ REST API (JSON / Standard Envelopes)
                            ▼
 ┌────────────────────────────────────────────────────────┐
 │  Application / Service Layer (Backend)                 │
-│  FastAPI + Pydantic + Standard Response Envelopes       │
+│  FastAPI + Pydantic v2 + SQLModel + RBAC Dependencies  │
 └────────────────────────────────────────────────────────┘
                            │
-                           │ SQLModel / SQLAlchemy Engine
+                           │ SQLAlchemy Engine / Alembic Migrations
                            ▼
 ┌────────────────────────────────────────────────────────┐
 │  Data Layer (Persistence)                              │
-│  PostgreSQL (Local / Docker) + Alembic Migrations      │
+│  PostgreSQL (Local / Docker)                           │
 └────────────────────────────────────────────────────────┘
 ```
 
-### Architectural Decisions (Locked per `DECISION_RULES.md`)
-* **D1. No Repository Layer:** `Route → Service → SQLModel Session`. Services talk to the database directly.
-* **D2. Soft Delete:** Business records use `is_active: bool`. Audit trails are never deletable.
-* **D3. Notifications are Backend Only:** `Notification` model + `create_notification()` + `GET /notifications`. No frontend inbox/bell.
-* **D5. Permission Based RBAC:** Routes protected via `require_permission("PERMISSION_NAME")`, evaluated dynamically — never hardcoded role checks.
-* **D7. API Contract Envelopes:** Standard `data`/`meta`/`error` shapes across every module.
-* **D8. Single Migration Owner:** Only the Team Lead runs Alembic migrations. In Phase 2, one batched migration is generated after all 4 new modules' models land, not one per module.
-* **D11. Error Raising Convention:** `HTTPException` with a `{"code", "message", "field"}` detail dict, always.
-* **D12. Secure Read Schemas:** Routes always return `*Read` schemas, never raw SQLModel objects.
-* **D13. (Phase 2) Integration Lead owns shared/frozen files** — prevents the merge conflicts Phase 1 hit repeatedly on `AppLayout.tsx`/`routes/index.tsx`.
-* **D14. (Phase 2) Cross-module FK handoffs agreed at Day 1 schema freeze** — specifically the Tendering → Contracts `tender_id` dependency.
+### Locked Architectural Decisions (`DECISION_RULES.md`)
+* **D1. No Repository Layer:** `Route → Service → SQLModel Session`.
+* **D2. Soft Delete:** Business records use `is_active: bool`. Audit logs are immutable and never deleted.
+* **D3. Notifications Backend-Only:** `Notification` model + `create_notification()` + `GET /notifications`.
+* **D5. Permission-Based RBAC:** Routes protected via `require_permission("PERMISSION_NAME")` evaluated dynamically against user roles.
+* **D7. Standard API Contract Envelopes:** All responses wrapped in `data`, `meta`, and `error` structures.
+* **D8. Single Linear Migration Chain:** Alembic migrations managed linearly ending in a single head (`f8d801247ecc`).
+* **D11. Standardized Error Format:** `HTTPException` with `{"code", "message", "field"}` detail payload.
+* **D12. Secure Read Schemas:** Endpoints return Pydantic `*Read` schemas, hiding internal models.
+* **D14. Contract Creation Constraint:** Contracts can **ONLY** be created against tenders in `AWARDED` status.
+* **D17. Parallel Phase 2 Progression:** Statutory clearances and tenders can be registered and progressed for a project regardless of its DPR status (matching real infrastructure practices where long-lead clearances run alongside DPR review).
 
 ---
 
-## 4. Phase 1 Modules — Status & Verification Results
+## 4. Phase 1 & Phase 2 Modules — Status & Scope
 
-All 6 modules plus login are **complete and live-verified**, not just built:
+All 10 feature modules + authentication and executive MIS dashboard are **100% complete and live-verified**:
 
-| Module | Owner | Core Scope & Workflow | Status |
-| :--- | :--- | :--- | :--- |
-| **1. Admin & Access Control (RBAC)** | Adithya (Lead) | JWT auth, dynamic permission validation, user/role admin, `/login` page + `ProtectedRoute` guard. | **Complete — verified** |
-| **2. Project Configuration** | Pragnya | `Project` model, categories, geographic mapping, cost tracking, lifecycle stage. | **Complete — verified** |
-| **3. DPR Submission & Approval** | Shashank | Full 8-state lifecycle, resubmission loops, version increments, `dpr_audit_log` trail, notifications. | **Complete — verified** |
-| **4. Task Management** | Jayanth | Task CRUD, priority/status, `evidence_url` required before marking DONE, audit logging on status change. | **Complete — verified** |
-| **5. Stakeholder & Meeting** | Kavya | Stakeholder + meeting directory, project-scoped, full CRUD. | **Complete — verified** |
-| **6. Dashboard / MIS** | Adithya (Lead) | 4 live KPI cards, 1 bar chart (project count by stage), 1 pie chart (task status), reading real data. | **Complete — verified** |
-
-### What "verified" means here — the actual testing that was done
-- **Live 12-step DPR state machine test:** create → submit → SMFCL reject → resubmit (version increments) → SMFCL approve/forward → Ministry reject → SMFCL requeue → re-approve/forward → Ministry approve → funds released. Confirmed via direct `dpr_audit_log` query: every transition present with correct actor, old/new status, and comment.
-- **Full role-permission matrix**, tested live across all 4 roles (Admin, Port Authority, SMFCL, Ministry) against every write endpoint in every module — confirmed each role can only do what it should (e.g. only SMFCL/Admin can approve at the SMFCL-review stage; Port Authority correctly blocked from review actions).
-- **Full demo script (master plan Section 15) run end-to-end using real, separate role accounts** — not a single Admin account performing every step — confirming the audit trail shows genuine distinct actors.
-- **`seed.py` idempotency proven** — run twice against the same database, zero duplicate rows, zero errors.
-- **Repo hygiene confirmed:** no `__pycache__`/`.pyc` files or `venv/` tracked in git; Alembic migration chain has no gaps.
+| Module | Core Scope & Capabilities | Status |
+| :--- | :--- | :---: |
+| **1. Admin & Access Control (RBAC)** | JWT authentication, dynamic permission checks across defined roles and permissions, `/login` flow, `ProtectedRoute`. | **Complete — Verified** |
+| **2. Project Configuration** | Project master registry, state/port mapping, funding model, estimated cost, lifecycle stage tracking. | **Complete — Verified** |
+| **3. DPR Submission & Approval** | 8-state DPR lifecycle, version incrementing, SMFCL & Ministry review loops, `dpr_audit_log` trail with old/new status tracking. | **Complete — Verified** |
+| **4. Task Management** | Project tasks, priority & status tracking, mandatory `evidence_url` verification rule prior to setting status to `DONE`. | **Complete — Verified** |
+| **5. Stakeholders & Meetings** | Stakeholder directory, project meeting scheduling, participant mapping, meeting minutes. | **Complete — Verified** |
+| **6. Statutory Clearances** | CRZ, EC, Forest, CTO, Land Acquisition & Utility Shifting clearance tracking, approval workflow, expiry monitoring summary (`/api/clearances/summary`). | **Complete — Verified** |
+| **7. Tendering & Bid Management** | 14-stage tender workflow, bid submission engine, financial/technical evaluation & L1/L2/L3 ranking, tender award linking winning bid. | **Complete — Verified** |
+| **8. Contractor Onboarding** | Contractor registration, GST/PAN/Reg verification, sequential status machine (`Registered` → `Verified` → `Empanelled`), document URL tracking. | **Complete — Verified** |
+| **9. Contracts & Work Orders** | Awarded tender contract binding (D14 enforcement), contract lifecycle (`ACTIVE`/`ISSUED`), nested Work Orders with scope & milestone value tracking. | **Complete — Verified** |
+| **10. Executive Dashboard / MIS** | Portfolio metrics, 8 live KPI cards (Phase 1 + Phase 2 Pre-Construction metrics), 1 Bar Chart (Projects by Stage), 1 Pie Chart (Task Breakdown). | **Complete — Verified** |
 
 ---
 
-## 5. Phase 2 Modules — In Progress
+## 5. Comprehensive Integration & Regression Verification
 
-| Module | Owner | Status |
-| :--- | :--- | :--- |
-| **1. Land Acquisition & Statutory Clearances** | Pragnya | In progress |
-| **2. Tendering & Bid Management** | Shashank | In progress |
-| **3. Contractor Onboarding & Registration** | Kavya | In progress |
-| **4. Contract & Work Order Management** | Jayanth | In progress |
-| **Integration Lead** (Dashboard KPI additions, RBAC permissions, routing, batched migration, `seed.py` updates, QA) | Adithya | In progress |
+The entire portal was validated using an end-to-end automated live verification suite executing real HTTP requests and PostgreSQL queries:
 
-Explicitly deferred to Phase 3 (Construction) — see `PROJECT_RULES.md` Section 3: progress tracking, milestone-based fund release, risk/issue logging, contractor performance history.
+* **Part A (Phase 1 Regression):** Executed full 9-step DPR state machine (`Submit` → `SMFCL Reject` → `Resubmit` → `SMFCL Approve` → `Ministry Reject` → `SMFCL Requeue` → `SMFCL Re-approve` → `Ministry Approve` → `Release Funds`). Verified `dpr_audit_log` records all 12 transitions with populated `old_status` and `new_status` columns. Confirmed Task `DONE` status strictly rejects missing evidence URLs.
+* **Part B (Phase 2 Workflow):** Verified Clearance approval, 14-stage Tender lifecycle, 3-bid evaluation & L1 award, D14 contract block (`TENDER_NOT_AWARDED` returned on un-awarded tenders), Contract activation, Work Order creation, and Contractor `Registered` → `Verified` → `Empanelled` sequential enforcement.
+* **Part C (Phase Boundary Check):** Confirmed parallel Phase 2 activity is enabled per D17 (clearances and tenders can be registered on projects prior to final DPR sanction).
+* **Part D (Housekeeping & Repo Integrity):** Confirmed Alembic single linear chain (`f8d801247ecc`), **0** committed cache/venv/env files in Git, and **0 errors** on `npm run build`.
 
 ---
 
-## 6. Git Workflow and Merge Safety Rules
+## 6. Dashboard KPI Architecture
 
-1. **Branching Structure:** Branch from `develop` into `feature/<module-name>`. Never commit to `main` or `develop` directly. Raise PRs targeting `develop`.
-2. **Start of Day Rebase:** Pull/rebase `develop` into your feature branch at the start of every work cycle.
-3. **Alembic Migration Safety (D8):** Juniors never run `alembic revision`. The Team Lead runs one batched migration once all Phase 2 models are merged.
-4. **`main` promotion (D9):** `main` is promoted from `develop` only at stable checkpoints — Phase 1's checkpoint is tagged `phase1-mvp-complete`. Phase 2 gets its own promotion once it reaches a stable point, not continuously.
-5. **Phase 2 shared files (D13):** Only the Integration Lead edits `main.py`, `router.py`, `permissions.py`, `alembic/`, `seed.py`, frontend layouts/routes/`components/ui`/`types/index.ts`. Module owners request changes through the Integration Lead rather than editing these directly.
+The Executive Dashboard (`frontend/src/pages/HomePage.tsx`) displays 8 live KPI cards organized into two executive domain sections:
+
+### Phase 1 Portfolio Metrics
+1. **Total Projects:** Count of all monitored port projects (`GET /projects`).
+2. **Active Tasks:** Tasks in `TODO` or `IN_PROGRESS` status (`GET /tasks`).
+3. **Completed Tasks:** Tasks marked as `DONE` with verified evidence (`GET /tasks`).
+
+### Phase 2 Pre-Construction & Procurement Metrics
+4. **Pending Clearances:** Count of clearances with status `PENDING` (`GET /api/clearances?status=PENDING`).
+5. **Active Tenders:** Tenders in active workflow stages (excluding `AWARDED` and `CLOSED`) (`GET /tenders`).
+6. **Contracts In Progress:** Contracts in `ACTIVE` or `ISSUED` status (`GET /contracts`).
+7. **Empanelled Contractors:** Verified contractors in `Empanelled` status (`GET /api/contractors?status=Empanelled`).
+
+Each card implements independent API fetching and per-card error state rendering without breaking layout or charts.
 
 ---
 
 ## 7. Quickstart and Installation
 
-Ensure you have Python 3.10+ and Node.js 18+ installed.
+### Prerequisites
+* Python 3.10+
+* Node.js 18+
+* PostgreSQL 14+ (running on port `5435` or default `5432`)
 
 ### Step 1: Database Setup
-1. Create a database named `sagarmala`.
-2. Create a user named `sagarmala` with password `sagarmala` (or match your local configuration).
+1. Create a PostgreSQL database named `sagarmala`.
+2. Create a user named `sagarmala` with password `sagarmala`.
 
 ### Step 2: Backend Setup
 ```bash
 cd backend
 python3 -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env      # update DATABASE_URL if needed
-alembic upgrade head
-python seed.py             # populates demo data across all modules/lifecycle stages/DPR states
-venv/bin/uvicorn app.main:app --reload
+cp .env.example .env      # Set DATABASE_URL=postgresql://sagarmala:sagarmala@localhost:5435/sagarmala
+alembic upgrade head      # Applies single linear migration chain up to head
+python seed.py            # Idempotently seeds master dataset across all 11 sections
+uvicorn app.main:app --reload --port 8000
 ```
-* **Swagger API Docs:** http://localhost:8000/docs
-* **Health Check:** http://localhost:8000/health → `{"status":"ok"}`
+* **Swagger API Documentation:** http://localhost:8000/docs
+* **Health Check Endpoint:** http://localhost:8000/health → `{"status":"ok"}`
 
 ### Step 3: Frontend Setup
 ```bash
@@ -168,22 +198,22 @@ npm install
 cp .env.example .env
 npm run dev
 ```
-* **Vite Dev App:** http://localhost:5173
+* **Vite Development Portal:** http://localhost:5173
 
 ---
 
-## 8. Authentication and Default Login Credentials
+## 8. Authentication & Pre-configured Login Accounts
 
-Every protected frontend route redirects to `/login` if unauthenticated. Full RBAC + DPR review permissions confirmed via live testing (see Section 4).
+All protected routes redirect to `/login` if unauthenticated. The RBAC system is preloaded via `bootstrap_rbac.py` and `seed.py` with pre-configured demo user accounts:
 
-| Role | Email | Password | Write Access |
+| Role | Default Email | Password | Key Permissions & Scope |
 | :--- | :--- | :--- | :--- |
-| **Admin** | `admin@sagarmala.gov.in` | `admin123` | Full access across all modules |
-| **Port Authority** | `port1@sagarmala.gov.in` | `password123` | Create/submit Projects, Tasks, Stakeholders, and DPRs. Cannot review/approve DPRs (403). |
-| **SMFCL** | `smfcl1@sagarmala.gov.in` | `password123` | Reviews DPRs at the SMFCL stage (approve/reject/forward), releases funds. Read-only on Projects/Tasks. Cannot create Projects/Tasks/Stakeholders (403). |
-| **Ministry** | `ministry@sagarmala.gov.in` | `password123` | Reviews DPRs at the Ministry stage (approve/reject). Read-only elsewhere. Cannot release funds directly (403) — that's SMFCL's action after Ministry approval. |
-
-(`seed.py` also creates a second Port Authority and SMFCL account for realistic multi-user demo scenarios — see the script for exact emails.)
+| **Admin** | `admin@sagarmala.gov.in` | `admin123` | Full access across all Phase 1 & Phase 2 modules |
+| **Port Authority** | `port1@sagarmala.gov.in` | `password123` | Create/submit Projects, Tasks, Stakeholders, DPRs, Clearances. Blocked from DPR approvals and contracting. |
+| **SMFCL** | `smfcl1@sagarmala.gov.in` | `password123` | Review DPRs (approve/reject/forward), release funds, manage clearances & contracts. |
+| **Ministry** | `ministry@sagarmala.gov.in` | `password123` | Final DPR sanction/rejection. Read-only on tendering & contractor onboarding. |
+| **Tender Creator** | `tender_creator@sagarmala.gov.in` | `password123` | Draft and publish tenders, manage bid submissions. |
+| **Bidder** | `bidder1@sagarmala.gov.in` | `password123` | Submit bids for published tenders. Blocked from contract management (403). |
 
 ---
 
@@ -193,40 +223,36 @@ Every protected frontend route redirects to `/login` if unauthenticated. Full RB
 SagarMala/
 ├── backend/
 │   ├── app/
-│   │   ├── api/          # Route controllers: auth, projects, dpr, tasks, stakeholders
-│   │   ├── core/         # Settings, security (JWT/password hashing)
-│   │   ├── db/           # SQLModel connection session
-│   │   ├── models/       # SQLModel database tables
+│   │   ├── api/          # REST route handlers: auth, projects, dpr, tasks, stakeholders, clearance, tender, contract, contractor
+│   │   ├── core/         # Security, JWT, RBAC permissions, configuration
+│   │   ├── db/           # Database engine & session management
+│   │   ├── models/       # SQLModel database tables (Project, DPR, Task, Clearance, Tender, Bid, Contract, WorkOrder, Contractor)
 │   │   ├── schemas/      # Pydantic validation and *Read schemas
-│   │   ├── services/     # Business logic and database queries
-│   │   └── main.py       # FastAPI application entrypoint
-│   ├── alembic/          # Database migration version files
-│   ├── bootstrap_rbac.py # Idempotent roles/permissions/admin-user seed
-│   ├── seed.py           # Full demo dataset — idempotent, all lifecycle stages/DPR states
-│   ├── requirements.txt
-│   └── .env.example
+│   │   ├── services/     # Domain business logic & state machine handlers
+│   │   └── main.py       # FastAPI application entrypoint & middleware
+│   ├── alembic/          # Single linear migration chain (versions up to f8d801247ecc)
+│   ├── bootstrap_rbac.py # Idempotent roles, permissions, and admin user bootstrap
+│   ├── seed.py           # Master 11-section seed script for demo data across all modules
+│   └── requirements.txt
 │
 └── frontend/
     ├── src/
-    │   ├── api/          # Axios HTTP client helpers (auth, projects, tasks, dpr, stakeholders, meetings)
-    │   ├── components/   # ProtectedRoute guard and shared UI
-    │   ├── features/     # Feature-grouped screens and assets (tasks, stakeholders, meetings)
-    │   ├── layouts/       # AppLayout shell (sidebar, topbar) — frozen file in Phase 2, see D13
-    │   ├── pages/         # Route-level pages: HomePage (Dashboard), LoginPage, ProjectsPage, DprsPage, etc.
-    │   ├── routes/        # Central react-router routing table — frozen file in Phase 2, see D13
-    │   ├── types/         # TypeScript types mirroring backend *Read schemas — frozen file in Phase 2, see D13
-    │   └── utils/         # Frontend formatting helpers
+    │   ├── api/          # Axios API client functions (projects, tasks, dpr, tender, etc.)
+    │   ├── components/   # ProtectedRoute guard, navigation, UI elements
+    │   ├── features/     # Feature modules: clearance, contracts, contractors, tasks, stakeholders, meetings
+    │   ├── layouts/      # AppLayout navigation shell
+    │   ├── pages/        # Route pages: HomePage (Dashboard), ProjectsPage, DprsPage, TendersPage, StakeholdersPage, MeetingsPage
+    │   ├── routes/       # React Router central routing configuration
+    │   └── types/        # TypeScript interfaces matching backend schemas
     ├── package.json
-    └── .env.example
+    └── vite.config.ts
 ```
 
 ---
 
-## 10. Where to Find More Detail
+## 10. Technical Documentation References
 
-- Phase 1 architecture, data model, API contract, timeline: `Sagarmala2_MVP_Project_Plan.md`
-- Phase 2 module breakdown, effort estimates, sprint timeline: `Sagarmala_Phase2_PreConstruction_Module_Assignment.docx`
-- Locked technical decisions: `DECISION_RULES.md`
-- Coding conventions and agent behavior expectations: `DEVELOPMENT_RULES.md`
-- Current scope boundary (what's in/out): `PROJECT_RULES.md`
-- Individual developer handbooks (Phase 1 and Phase 2): `docs/team/`
+* **Technical Decision Records:** `docs/DECISION_RULES.md`
+* **Development & Agent Guidelines:** `DEVELOPMENT_RULES.md`
+* **Phase 1 Architectural Spec:** `Sagarmala2_MVP_Project_Plan.md`
+* **Phase 2 Module Handbooks:** `docs/team/`
