@@ -13,6 +13,10 @@ import {
 } from "recharts";
 import { getProjects } from "@/api/projects";
 import { getTasks } from "@/api/tasks";
+import { getClearances } from "@/features/clearance/api";
+import { getTenders } from "@/api/tender";
+import { getContracts } from "@/features/contracts/api";
+import { getContractors } from "@/features/contractors/api";
 import type { ProjectRead } from "@/types";
 import type { TaskRead } from "@/types/task";
 
@@ -27,6 +31,19 @@ export function HomePage() {
   const [tasks, setTasks] = useState<TaskRead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Phase 2 KPI state
+  const [pendingClearances, setPendingClearances] = useState<number | null>(null);
+  const [pendingClearancesError, setPendingClearancesError] = useState(false);
+
+  const [activeTenders, setActiveTenders] = useState<number | null>(null);
+  const [activeTendersError, setActiveTendersError] = useState(false);
+
+  const [contractsInProgress, setContractsInProgress] = useState<number | null>(null);
+  const [contractsInProgressError, setContractsInProgressError] = useState(false);
+
+  const [empanelledContractors, setEmpanelledContractors] = useState<number | null>(null);
+  const [empanelledContractorsError, setEmpanelledContractorsError] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -47,6 +64,53 @@ export function HomePage() {
       );
     } finally {
       setLoading(false);
+    }
+
+    // Fetch Phase 2 KPI Cards independently with per-card error handling
+    // 1. Pending Clearances
+    try {
+      const clrRes = await getClearances({ status: "PENDING", page: 1, page_size: 100 });
+      setPendingClearances(clrRes.meta.total);
+      setPendingClearancesError(false);
+    } catch (err) {
+      console.error("Pending clearances fetch error:", err);
+      setPendingClearancesError(true);
+    }
+
+    // 2. Active Tenders (status != AWARDED and status != CLOSED)
+    try {
+      const tndRes = await getTenders(1, 100);
+      const activeCount = (tndRes.data || []).filter(
+        (t) => t.status !== "AWARDED" && t.status !== "CLOSED"
+      ).length;
+      setActiveTenders(activeCount);
+      setActiveTendersError(false);
+    } catch (err) {
+      console.error("Active tenders fetch error:", err);
+      setActiveTendersError(true);
+    }
+
+    // 3. Contracts In Progress (status ACTIVE or ISSUED)
+    try {
+      const cntRes = await getContracts(1, 100, {});
+      const inProgressCount = (cntRes.data || []).filter(
+        (c) => c.status === "ACTIVE" || c.status === "ISSUED"
+      ).length;
+      setContractsInProgress(inProgressCount);
+      setContractsInProgressError(false);
+    } catch (err) {
+      console.error("Contracts in progress fetch error:", err);
+      setContractsInProgressError(true);
+    }
+
+    // 4. Empanelled Contractors (status Empanelled)
+    try {
+      const crRes = await getContractors({ status: "Empanelled", page: 1, page_size: 100 });
+      setEmpanelledContractors(crRes.meta.total);
+      setEmpanelledContractorsError(false);
+    } catch (err) {
+      console.error("Empanelled contractors fetch error:", err);
+      setEmpanelledContractorsError(true);
     }
   }, []);
 
@@ -142,8 +206,8 @@ export function HomePage() {
         </p>
       </div>
 
-      {/* 4 KPI Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Phase 1 Portfolio KPI Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {/* Card 1: Total Projects */}
         <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
@@ -176,21 +240,73 @@ export function HomePage() {
           </p>
           <p className="mt-1 text-xs text-gray-500">Tasks marked as done</p>
         </div>
+      </div>
 
-        {/* Card 4: Pending DPR Approvals (Placeholder for unbuilt DPR module) */}
-        <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-5 shadow-sm">
-          <div className="flex items-center justify-between">
+      {/* Phase 2 Pre-Construction KPI Cards */}
+      <div>
+        <h2 className="mb-3 text-sm font-semibold tracking-wide uppercase text-gray-500">
+          Pre-Construction & Procurement Metrics
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Card 1: Pending Clearances */}
+          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Pending DPR Approvals
+              Pending Clearances
             </p>
-            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
-              Pending Module
-            </span>
+            {pendingClearancesError ? (
+              <p className="mt-2 text-xs font-medium text-red-600">Error loading metric</p>
+            ) : (
+              <p className="mt-2 text-3xl font-bold text-amber-600">
+                {pendingClearances !== null ? pendingClearances : "—"}
+              </p>
+            )}
+            <p className="mt-1 text-xs text-gray-500">Statutory clearances pending approval</p>
           </div>
-          <p className="mt-2 text-3xl font-bold text-gray-400">—</p>
-          <p className="mt-1 text-xs text-gray-400">
-            DPR Workflow module not yet built
-          </p>
+
+          {/* Card 2: Active Tenders */}
+          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+              Active Tenders
+            </p>
+            {activeTendersError ? (
+              <p className="mt-2 text-xs font-medium text-red-600">Error loading metric</p>
+            ) : (
+              <p className="mt-2 text-3xl font-bold text-indigo-600">
+                {activeTenders !== null ? activeTenders : "—"}
+              </p>
+            )}
+            <p className="mt-1 text-xs text-gray-500">Tenders in active workflow stages</p>
+          </div>
+
+          {/* Card 3: Contracts In Progress */}
+          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+              Contracts In Progress
+            </p>
+            {contractsInProgressError ? (
+              <p className="mt-2 text-xs font-medium text-red-600">Error loading metric</p>
+            ) : (
+              <p className="mt-2 text-3xl font-bold text-emerald-600">
+                {contractsInProgress !== null ? contractsInProgress : "—"}
+              </p>
+            )}
+            <p className="mt-1 text-xs text-gray-500">Contracts active or issued</p>
+          </div>
+
+          {/* Card 4: Empanelled Contractors */}
+          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+              Empanelled Contractors
+            </p>
+            {empanelledContractorsError ? (
+              <p className="mt-2 text-xs font-medium text-red-600">Error loading metric</p>
+            ) : (
+              <p className="mt-2 text-3xl font-bold text-purple-600">
+                {empanelledContractors !== null ? empanelledContractors : "—"}
+              </p>
+            )}
+            <p className="mt-1 text-xs text-gray-500">Verified & empanelled partners</p>
+          </div>
         </div>
       </div>
 
@@ -284,7 +400,7 @@ export function HomePage() {
                     <span className="text-xs text-gray-600">{value}</span>
                   )}
                 />
-              </PieChart>
+                </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
