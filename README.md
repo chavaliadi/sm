@@ -2,9 +2,9 @@
 
 The **Sagarmala 2.0 Portal** is a full-stack web application designed for the Ministry of Ports, Shipping and Waterways (MoPSW) and the Sagarmala Development Company Limited (SMFCL) to manage, appraise, approve, and execute port-led infrastructure projects across India.
 
-This repository contains an **MVP, fully verified full-stack web application**: **FastAPI backend** (SQLModel + PostgreSQL) + **Vite / React / TypeScript / Tailwind CSS** frontend, preloaded with comprehensive database schemas, standard API envelopes, global error handling, RBAC permission authorization, feature modules, master seed datasets, and executive MIS dashboards.
+This repository contains an **MVP, fully verified full-stack web application**: **FastAPI backend** (SQLModel + PostgreSQL) + **Vite / React / TypeScript / Tailwind CSS** frontend, preloaded with comprehensive database schemas, standard API envelopes, global error handling, RBAC permission authorization, feature modules, master seed datasets, unified project detail views, and executive MIS dashboards.
 
-**Current Status:** Both **Phase 1 (Appraisal & Sanction)** and **Phase 2 (Pre-Construction & Procurement)** are **100% complete, integrated, and live-verified end-to-end**.
+**Current Status:** Both **Phase 1 (Appraisal & Sanction)** and **Phase 2 (Pre-Construction & Procurement)** are **100% complete, integrated, and live-verified end-to-end**, including Unified Project Detail View (RFP 4.6.3.2), Task Due Date Reminders, Notifications UI, Guided Project Setup fields, and Expanded Executive MIS Dashboards (2 Bar + 2 Pie Charts).
 
 ---
 
@@ -13,20 +13,24 @@ This repository contains an **MVP, fully verified full-stack web application**: 
 Sagarmala 2.0 is a flagship initiative of the Government of India under the **Viksit Bharat 2047** mission, focusing on port modernization, maritime industrialization, shipbuilding, coastal community development, multimodal connectivity, and sustainable maritime practices.
 
 The portal covers the complete lifecycle of port-led infrastructure delivery:
-* **Phase 1 (Appraisal & Sanction):** Proposal submission by Port Authorities, DPR technical & financial appraisal by SMFCL, Ministry final sanctioning, fund disbursement tracking, and full audit logging.
-* **Phase 2 (Pre-Construction & Procurement):** Statutory clearances tracking, end-to-end tendering & bid evaluation, contractor registration & empanelment, contract execution, and work order management.
+* **Phase 1 (Appraisal & Sanction):** Proposal submission by Port Authorities, DPR completeness check (RFP 4.6.1), DPR technical & financial appraisal by SMFCL, Ministry final sanctioning, fund disbursement tracking, and full audit logging.
+* **Phase 2 (Pre-Construction & Procurement):** Statutory clearances tracking, end-to-end tendering & bid evaluation (14-stage workflow with data integrity safeguards), contractor registration & empanelment, contract execution, work order management, and unified project detail aggregation.
 
 ---
 
 ## 2. Core Workflows and State Machines
 
 ### 2.1 DPR Submission & Approval State Machine (Phase 1)
-A Detailed Project Report (DPR) transitions through an 8-state audited lifecycle:
+A Detailed Project Report (DPR) transitions through an 8-state audited lifecycle with an automatic completeness validation gate:
 
 ```mermaid
 stateDiagram-v2
     [*] --> DRAFT : Port Authority creates DPR
-    DRAFT --> SUBMITTED : Port Authority submits DPR
+    DRAFT --> SUBMITTED : Automatic Completeness Check (RFP 4.6.1)
+    note right of SUBMITTED
+      Validates active project reference and 
+      required DPR fields prior to review
+    end note
     DRAFT --> [*] : Soft Delete (DRAFT only)
 
     SUBMITTED --> SMFCL_REVIEW : SMFCL receives proposal
@@ -45,7 +49,7 @@ stateDiagram-v2
 ```
 
 ### 2.2 Tender & Bid Lifecycle State Machine (Phase 2)
-Tenders follow a 14-stage sequential state machine with integrated bid submission and multi-factor evaluation:
+Tenders follow a 14-stage sequential state machine with integrated bid submission, multi-factor L1/L2/L3 evaluation, and strict award integrity:
 
 ```mermaid
 stateDiagram-v2
@@ -62,7 +66,7 @@ stateDiagram-v2
     FINAL_EVALUATION --> APPROVAL : Tender Committee Sanction
     APPROVAL --> LOA_ISSUED : Issue Letter of Award (LOA)
     LOA_ISSUED --> CONTRACT_GENERATED : Draft Contract Package
-    CONTRACT_GENERATED --> AWARDED : Final Award (links awarded_bid_id)
+    CONTRACT_GENERATED --> AWARDED : Final Award (enforces status == AWARDED & awarded_bid_id)
     AWARDED --> CLOSED : Tender Concluded
 ```
 
@@ -85,14 +89,16 @@ The application implements a clean, decoupled **Layered Architecture**:
 ```
 ┌────────────────────────────────────────────────────────┐
 │  Presentation Layer (Frontend)                         │
-│  React 19 + TypeScript + Tailwind CSS v4 + Lucide Icons│
+│  React 19 + TypeScript + Tailwind CSS + Lucide Icons   │
+│  Notifications Bell UI + Unified Project Detail Page   │
 └────────────────────────────────────────────────────────┘
                            │
                            │ REST API (JSON / Standard Envelopes)
                            ▼
 ┌────────────────────────────────────────────────────────┐
 │  Application / Service Layer (Backend)                 │
-│  FastAPI + Pydantic v2 + SQLModel + RBAC Dependencies  │
+│  FastAPI 0.140.0 + Starlette 1.3.1 + Pydantic v2      │
+│  SQLModel + RBAC Permissions + Task Reminder Engine    │
 └────────────────────────────────────────────────────────┘
                            │
                            │ SQLAlchemy Engine / Alembic Migrations
@@ -103,36 +109,39 @@ The application implements a clean, decoupled **Layered Architecture**:
 └────────────────────────────────────────────────────────┘
 ```
 
-### Locked Architectural Decisions (`DECISION_RULES.md`)
+### Architectural Decisions & Revisions (`DECISION_RULES.md`)
 * **D1. No Repository Layer:** `Route → Service → SQLModel Session`.
 * **D2. Soft Delete:** Business records use `is_active: bool`. Audit logs are immutable and never deleted.
-* **D3. Notifications Backend-Only:** `Notification` model + `create_notification()` + `GET /notifications`.
+* **D3-REVISED. Notifications UI & Task Reminders:** Backend notification infrastructure (`Notification` model + `create_notification()`) connected to topbar UI (`NotificationsPanel.tsx` with live unread badge and 30s polling) plus idempotent task due-date reminder trigger (`POST /tasks/check-reminders`).
 * **D5. Permission-Based RBAC:** Routes protected via `require_permission("PERMISSION_NAME")` evaluated dynamically against user roles.
+* **D6-REVISED. Expanded Executive Dashboard (2 Bar + 2 Pie Charts):** Dashboard expanded to 2 bar charts (*Project Lifecycle Stages* & *Tender Pipeline by Status*) and 2 pie charts (*Task Status Breakdown* & *Statutory Clearance Status*).
 * **D7. Standard API Contract Envelopes:** All responses wrapped in `data`, `meta`, and `error` structures.
 * **D8. Single Linear Migration Chain:** Alembic migrations managed linearly ending in a single head (`f8d801247ecc`).
 * **D11. Standardized Error Format:** `HTTPException` with `{"code", "message", "field"}` detail payload.
 * **D12. Secure Read Schemas:** Endpoints return Pydantic `*Read` schemas, hiding internal models.
 * **D14. Contract Creation Constraint:** Contracts can **ONLY** be created against tenders in `AWARDED` status.
-* **D17. Parallel Phase 2 Progression:** Statutory clearances and tenders can be registered and progressed for a project regardless of its DPR status (matching real infrastructure practices where long-lead clearances run alongside DPR review).
+* **D17. Parallel Phase 2 Progression:** Statutory clearances and tenders can be registered and progressed for a project regardless of its DPR status.
 
 ---
 
-## 4. Phase 1 & Phase 2 Modules — Status & Scope
+## 4. Feature Modules & RFP Compliance — Status & Scope
 
-All 10 feature modules + authentication and executive MIS dashboard are **100% complete and live-verified**:
+All feature modules, core services, and management screens are **100% complete and live-verified**:
 
-| Module | Core Scope & Capabilities | Status |
+| Module / Feature | Core Scope & Capabilities | Status |
 | :--- | :--- | :---: |
 | **1. Admin & Access Control (RBAC)** | JWT authentication, dynamic permission checks across defined roles and permissions, `/login` flow, `ProtectedRoute`. | **Complete — Verified** |
-| **2. Project Configuration** | Project master registry, state/port mapping, funding model, estimated cost, lifecycle stage tracking. | **Complete — Verified** |
-| **3. DPR Submission & Approval** | 8-state DPR lifecycle, version incrementing, SMFCL & Ministry review loops, `dpr_audit_log` trail with old/new status tracking. | **Complete — Verified** |
-| **4. Task Management** | Project tasks, priority & status tracking, mandatory `evidence_url` verification rule prior to setting status to `DONE`. | **Complete — Verified** |
-| **5. Stakeholders & Meetings** | Stakeholder directory, project meeting scheduling, participant mapping, meeting minutes. | **Complete — Verified** |
-| **6. Statutory Clearances** | CRZ, EC, Forest, CTO, Land Acquisition & Utility Shifting clearance tracking, approval workflow, expiry monitoring summary (`/api/clearances/summary`). | **Complete — Verified** |
-| **7. Tendering & Bid Management** | 14-stage tender workflow, bid submission engine, financial/technical evaluation & L1/L2/L3 ranking, tender award linking winning bid. | **Complete — Verified** |
-| **8. Contractor Onboarding** | Contractor registration, GST/PAN/Reg verification, sequential status machine (`Registered` → `Verified` → `Empanelled`), document URL tracking. | **Complete — Verified** |
-| **9. Contracts & Work Orders** | Awarded tender contract binding (D14 enforcement), contract lifecycle (`ACTIVE`/`ISSUED`), nested Work Orders with scope & milestone value tracking. | **Complete — Verified** |
-| **10. Executive Dashboard / MIS** | Portfolio metrics, 8 live KPI cards (Phase 1 + Phase 2 Pre-Construction metrics), 1 Bar Chart (Projects by Stage), 1 Pie Chart (Task Breakdown). | **Complete — Verified** |
+| **2. Project Setup & Guided Fields** | Project master registry, state/port mapping, funding model, estimated & approved costs, lifecycle stage tracking, guided setup with `objectives` & `milestones` (RFP 4.6.3.2). | **Complete — Verified** |
+| **3. Unified Project Detail View** | Read-only aggregation endpoint (`GET /projects/{id}/detail`) and page (`/projects/:id`) displaying project header plus DPR, Statutory Clearances, Tenders (+ bid summaries), Contracts (+ work order counts), Tasks, Stakeholders, and Meetings. | **Complete — Verified** |
+| **4. DPR Submission & Completeness** | 8-state DPR lifecycle, version incrementing, SMFCL & Ministry review loops, `dpr_audit_log` audit trail, automatic completeness check gate (`DPR_INCOMPLETE` validation per RFP 4.6.1). | **Complete — Verified** |
+| **5. Task Management & Reminders** | Project tasks, priority & status tracking, mandatory `evidence_url` verification rule prior to setting status to `DONE`, idempotent task due-date reminder trigger (`POST /tasks/check-reminders`). | **Complete — Verified** |
+| **6. Notifications System** | Topbar bell icon with unread count badge, drop-down notification list (`NotificationsPanel.tsx`), periodic polling, dismiss action (`DELETE /notifications/{id}`). | **Complete — Verified** |
+| **7. Stakeholders & Meetings** | Stakeholder directory, project meeting scheduling, participant mapping, meeting minutes. | **Complete — Verified** |
+| **8. Statutory Clearances** | CRZ, EC, Forest, CTO, Land Acquisition & Utility Shifting clearance tracking, approval workflow, expiry monitoring summary (`/api/clearances/summary`). | **Complete — Verified** |
+| **9. Tendering & Award Safeguards** | 14-stage tender workflow, bid submission engine, financial/technical evaluation & L1/L2/L3 ranking, strict award safeguard (`awarded_bid_id` only allowed when status is `AWARDED`). | **Complete — Verified** |
+| **10. Contractor Onboarding** | Contractor registration, GST/PAN/Reg verification, sequential status machine (`Registered` → `Verified` → `Empanelled`), document URL tracking. | **Complete — Verified** |
+| **11. Contracts & Work Orders** | Awarded tender contract binding (D14 enforcement), contract lifecycle (`ACTIVE`/`ISSUED`), nested Work Orders with scope & milestone value tracking. | **Complete — Verified** |
+| **12. Executive Dashboard (2+2 Charts)** | Portfolio metrics, 7 live KPI cards, 2 Bar Charts (*Projects by Stage*, *Tender Pipeline*), 2 Pie Charts (*Task Breakdown*, *Clearance Status*). | **Complete — Verified** |
 
 ---
 
@@ -140,16 +149,16 @@ All 10 feature modules + authentication and executive MIS dashboard are **100% c
 
 The entire portal was validated using an end-to-end automated live verification suite executing real HTTP requests and PostgreSQL queries:
 
-* **Part A (Phase 1 Regression):** Executed full 9-step DPR state machine (`Submit` → `SMFCL Reject` → `Resubmit` → `SMFCL Approve` → `Ministry Reject` → `SMFCL Requeue` → `SMFCL Re-approve` → `Ministry Approve` → `Release Funds`). Verified `dpr_audit_log` records all 12 transitions with populated `old_status` and `new_status` columns. Confirmed Task `DONE` status strictly rejects missing evidence URLs.
-* **Part B (Phase 2 Workflow):** Verified Clearance approval, 14-stage Tender lifecycle, 3-bid evaluation & L1 award, D14 contract block (`TENDER_NOT_AWARDED` returned on un-awarded tenders), Contract activation, Work Order creation, and Contractor `Registered` → `Verified` → `Empanelled` sequential enforcement.
-* **Part C (Phase Boundary Check):** Confirmed parallel Phase 2 activity is enabled per D17 (clearances and tenders can be registered on projects prior to final DPR sanction).
-* **Part D (Housekeeping & Repo Integrity):** Confirmed Alembic single linear chain (`f8d801247ecc`), **0** committed cache/venv/env files in Git, and **0 errors** on `npm run build`.
+* **Part A (Phase 1 Regression):** Executed full DPR state machine (`Submit` → `SMFCL Reject` → `Resubmit` → `SMFCL Approve` → `Ministry Reject` → `SMFCL Requeue` → `SMFCL Re-approve` → `Ministry Approve` → `Release Funds`). Verified `dpr_audit_log` records all 12 transitions with populated `old_status` and `new_status` columns. Confirmed Task `DONE` status strictly rejects missing evidence URLs. Verified DPR completeness check blocks invalid submissions.
+* **Part B (Phase 2 Workflow & Award Guard):** Verified Clearance approval, 14-stage Tender lifecycle, 3-bid evaluation & L1 award, award status safeguard (`INVALID_AWARD_STATE` returned when setting `awarded_bid_id` on non-AWARDED tenders), D14 contract block (`TENDER_NOT_AWARDED` returned on un-awarded tenders), Contract activation, Work Order creation, and Contractor `Registered` → `Verified` → `Empanelled` sequential enforcement.
+* **Part C (Unified Detail View & Task Reminders):** Verified `GET /projects/{id}/detail` returns full 7-module aggregated payload matching direct endpoint queries line-for-line. Verified `POST /tasks/check-reminders` creates due-date notifications idempotently (0 duplicates on re-run).
+* **Part D (Housekeeping & Build Integrity):** Confirmed Alembic single linear chain (`f8d801247ecc`), **0** committed cache/venv/env files in Git, clean backend `py_compile`, and **0 errors** on `npm run build`.
 
 ---
 
 ## 6. Dashboard KPI Architecture
 
-The Executive Dashboard (`frontend/src/pages/HomePage.tsx`) displays 8 live KPI cards organized into two executive domain sections:
+The Executive Dashboard (`frontend/src/pages/HomePage.tsx`) displays 7 live KPI cards and 4 charts organized into two executive domain sections:
 
 ### Phase 1 Portfolio Metrics
 1. **Total Projects:** Count of all monitored port projects (`GET /projects`).
@@ -162,7 +171,11 @@ The Executive Dashboard (`frontend/src/pages/HomePage.tsx`) displays 8 live KPI 
 6. **Contracts In Progress:** Contracts in `ACTIVE` or `ISSUED` status (`GET /contracts`).
 7. **Empanelled Contractors:** Verified contractors in `Empanelled` status (`GET /api/contractors?status=Empanelled`).
 
-Each card implements independent API fetching and per-card error state rendering without breaking layout or charts.
+### Executive Analytics Charts (2 Bar + 2 Pie)
+* **Bar Chart 1:** Project Count by Lifecycle Stage
+* **Pie Chart 1:** Task Status Breakdown (`To Do`, `In Progress`, `Done`)
+* **Bar Chart 2:** Tender Pipeline by Status (all 14 procurement stages)
+* **Pie Chart 2:** Statutory Clearance Status Breakdown (`Approved`, `Pending`, `Rejected`)
 
 ---
 
@@ -191,7 +204,13 @@ uvicorn app.main:app --reload --port 8000
 * **Swagger API Documentation:** http://localhost:8000/docs
 * **Health Check Endpoint:** http://localhost:8000/health → `{"status":"ok"}`
 
-### Step 3: Frontend Setup
+### Step 3: Manual Task Reminders Check (API Trigger)
+```bash
+curl -X POST "http://localhost:8000/tasks/check-reminders?threshold_days=3" \
+     -H "Authorization: Bearer <ADMIN_TOKEN>"
+```
+
+### Step 4: Frontend Setup
 ```bash
 cd frontend
 npm install
@@ -223,13 +242,13 @@ All protected routes redirect to `/login` if unauthenticated. The RBAC system is
 SagarMala/
 ├── backend/
 │   ├── app/
-│   │   ├── api/          # REST route handlers: auth, projects, dpr, tasks, stakeholders, clearance, tender, contract, contractor
+│   │   ├── api/          # REST route handlers: auth, projects (including /detail), dpr, tasks (including /check-reminders), stakeholders, clearance, tender, contract, contractor, notifications
 │   │   ├── core/         # Security, JWT, RBAC permissions, configuration
 │   │   ├── db/           # Database engine & session management
-│   │   ├── models/       # SQLModel database tables (Project, DPR, Task, Clearance, Tender, Bid, Contract, WorkOrder, Contractor)
+│   │   ├── models/       # SQLModel database tables (Project, DPR, Task, Clearance, Tender, Bid, Contract, WorkOrder, Contractor, Notification)
 │   │   ├── schemas/      # Pydantic validation and *Read schemas
-│   │   ├── services/     # Domain business logic & state machine handlers
-│   │   └── main.py       # FastAPI application entrypoint & middleware
+│   │   ├── services/     # Domain business logic, state machines & task reminder engine
+│   │   └── main.py       # FastAPI application entrypoint & exception handlers
 │   ├── alembic/          # Single linear migration chain (versions up to f8d801247ecc)
 │   ├── bootstrap_rbac.py # Idempotent roles, permissions, and admin user bootstrap
 │   ├── seed.py           # Master 11-section seed script for demo data across all modules
@@ -237,12 +256,12 @@ SagarMala/
 │
 └── frontend/
     ├── src/
-    │   ├── api/          # Axios API client functions (projects, tasks, dpr, tender, etc.)
+    │   ├── api/          # Axios API client functions (projects, tasks, dpr, tender, notifications, etc.)
     │   ├── components/   # ProtectedRoute guard, navigation, UI elements
-    │   ├── features/     # Feature modules: clearance, contracts, contractors, tasks, stakeholders, meetings
-    │   ├── layouts/      # AppLayout navigation shell
-    │   ├── pages/        # Route pages: HomePage (Dashboard), ProjectsPage, DprsPage, TendersPage, StakeholdersPage, MeetingsPage
-    │   ├── routes/       # React Router central routing configuration
+    │   ├── features/     # Feature modules: clearance, contracts, contractors, tasks, stakeholders, meetings, notifications
+    │   ├── layouts/      # AppLayout shell with Notifications bell badge
+    │   ├── pages/        # Route pages: HomePage (Dashboard), ProjectsPage, ProjectDetailPage, DprsPage, TendersPage, StakeholdersPage, MeetingsPage
+    │   ├── routes/       # React Router central routing configuration (/projects/:id)
     │   └── types/        # TypeScript interfaces matching backend schemas
     ├── package.json
     └── vite.config.ts
