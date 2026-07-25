@@ -167,8 +167,42 @@ def submit_dpr(session: Session, dpr_id: int, actor_id: int) -> DPR:
     """
     DRAFT → SUBMITTED → SMFCL_REVIEW (two-step auto-advance).
     Port Authority submits the DPR for review.
+    Performs automatic completeness check per RFP 4.6.1.
     """
     dpr = _get_active_dpr(session, dpr_id)
+
+    # Automatic completeness check (RFP 4.6.1)
+    missing_fields = []
+    if not dpr.project_id:
+        missing_fields.append("project_id")
+        project = None
+    else:
+        project = session.get(Project, dpr.project_id)
+        if not project or not project.is_active:
+            missing_fields.append("project_id (invalid or inactive project)")
+
+    if not dpr.submitted_by:
+        missing_fields.append("submitted_by")
+
+    if dpr.version is None:
+        missing_fields.append("version")
+
+    if project:
+        if project.estimated_cost is None or project.estimated_cost <= 0:
+            missing_fields.append("estimated_cost")
+        if not project.funding_model or not str(project.funding_model).strip():
+            missing_fields.append("funding_model")
+
+    if missing_fields:
+        missing_str = ", ".join(missing_fields)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "DPR_INCOMPLETE",
+                "message": f"DPR is missing required information and cannot be submitted: {missing_str}",
+                "field": None,
+            },
+        )
 
     # If resubmitting after SMFCL rejection, version increments
     if dpr.status == DPRStatus.REJECTED_BY_SMFCL:
