@@ -6,6 +6,7 @@ import os
 
 from app.models.tender import Tender, TenderAuditLog, TENDER_TRANSITIONS
 from app.models.bid import Bid, ALLOWED_BID_EXTENSIONS, MAX_BID_FILE_MB
+from app.models.dpr import DPR
 from app.schemas.tender import TenderCreate, TenderUpdate
 from app.schemas.bid import BidCreate, BidUpdate
 
@@ -95,6 +96,21 @@ def update_tender(session: Session, db_tender: Tender, tender_in: TenderUpdate, 
                     "message": f"Cannot go from '{db_tender.status}' to '{tender_in.status}'. Allowed: {allowed}"
                 }
             )
+
+        if tender_in.status == "AWARDED":
+            dpr = session.exec(
+                select(DPR).where(DPR.project_id == db_tender.project_id, DPR.is_active == True)
+            ).first()
+            if not dpr or dpr.status not in ("APPROVED", "FUNDS_RELEASED"):
+                raise HTTPException(
+                    status_code=400,
+                    detail={
+                        "code": "DPR_NOT_APPROVED",
+                        "message": f"Cannot award this tender — the project's DPR must be APPROVED or FUNDS_RELEASED first (currently: {dpr.status if dpr else 'no DPR found'}).",
+                        "field": None,
+                    }
+                )
+
         old_status = db_tender.status
         db_tender.status = tender_in.status
 
