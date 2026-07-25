@@ -70,14 +70,25 @@ role" — not editing every route that used a hardcoded role check.
 **Do NOT:** write `if user.role == "ADMIN"` (or similar) anywhere in route or
 service code.
 
-### D6. Dashboard: one bar chart, one pie chart — no more
+### D6-REVISED. Dashboard expanded from 1 bar + 1 pie to 2 bar + 2 pie (amends D6)
 
-**Decision:** Dashboard shows cards + a table + exactly one bar chart + one
-pie chart.
-**Rationale:** Government clients care about readability, not chart variety.
-More charts is more surface area for bugs with no demo payoff.
-**Do NOT:** add additional chart types or a new charting library without
-being asked.
+**Original D6:** Dashboard shows cards + a table + exactly one bar chart
++ one pie chart — no more, to keep it simple and readable.
+**Revision:** Added a second bar chart (Tender Pipeline by Status,
+all 14 tender stages represented, most currently at zero) and a second
+pie chart (Statutory Clearance Status Breakdown — Approved/Pending/
+Rejected). Chosen over a Contract status pie chart because clearances
+currently have more real data variety (15 records across 3 statuses,
+vs. 7 contracts across 3 statuses with less spread).
+**Rationale:** The original 1+1 cap was right for a Phase-1-only demo.
+Now that Phase 2's four modules (Clearances, Tendering, Contracts,
+Contractors) generate real state, the Dashboard was under-representing
+what the system actually does. This is a deliberate, bounded expansion
+— 2+2 — not the start of unbounded chart growth.
+**Do NOT:** add a third bar or third pie chart without a new, explicit
+decision. If Contracts' data becomes more varied later, that's a reason
+to swap the existing clearance pie for a contract one, not add a fifth
+chart.
 
 ### D7. API contract is frozen — every module matches it exactly
 
