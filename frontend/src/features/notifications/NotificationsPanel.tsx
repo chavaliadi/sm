@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Bell, Trash2, RefreshCw, AlertCircle, Inbox } from "lucide-react";
-import { getNotifications, deleteNotification } from "./api";
+import { getNotifications, deleteNotification, markAllAsRead } from "./api";
 import type { NotificationRead } from "./types";
 
 export function NotificationsPanel() {
@@ -20,7 +20,7 @@ export function NotificationsPanel() {
       console.error("Failed to load notifications:", err);
       setError(
         err.response?.data?.error?.message ||
-          (err instanceof Error ? err.message : "Failed to load notifications.")
+        (err instanceof Error ? err.message : "Failed to load notifications.")
       );
     } finally {
       if (showLoading) setLoading(false);
@@ -56,7 +56,7 @@ export function NotificationsPanel() {
       console.error("Failed to dismiss notification:", err);
       alert(
         err.response?.data?.error?.message ||
-          (err instanceof Error ? err.message : "Failed to dismiss notification")
+        (err instanceof Error ? err.message : "Failed to dismiss notification")
       );
     }
   };
@@ -68,10 +68,18 @@ export function NotificationsPanel() {
       {/* Bell Button with Badge */}
       <button
         type="button"
-        onClick={() => {
+        onClick={async () => {
           setIsOpen((prev) => !prev);
           if (!isOpen) {
             void fetchNotifications(false);
+            if (unreadCount > 0) {
+              try {
+                await markAllAsRead();
+                setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+              } catch (e) {
+                console.error("Failed to mark notifications as read", e);
+              }
+            }
           }
         }}
         className="relative rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
@@ -138,9 +146,8 @@ export function NotificationsPanel() {
               notifications.map((item) => (
                 <div
                   key={item.id}
-                  className={`p-3 text-xs transition-colors hover:bg-gray-50 ${
-                    !item.read ? "bg-sky-50/40" : "bg-white"
-                  }`}
+                  className={`p-3 text-xs transition-colors hover:bg-gray-50 ${!item.read ? "bg-sky-50/40" : "bg-white"
+                    }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">

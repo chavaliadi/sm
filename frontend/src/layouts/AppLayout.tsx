@@ -55,6 +55,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
               Contractors
             </Link>
             <Link
+              to="/contracts"
+              className="block rounded-md px-2 py-1.5 font-medium hover:bg-gray-100 hover:text-gray-900"
+            >
+              Contracts
+            </Link>
+            <Link
               to="/stakeholders"
               className="block rounded-md px-2 py-1.5 font-medium hover:bg-gray-100 hover:text-gray-900"
             >

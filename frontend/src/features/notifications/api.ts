@@ -11,3 +11,7 @@ export async function deleteNotification(id: number): Promise<{ data: { message:
   const response = await apiClient.delete<{ data: { message: string } }>(`/notifications/${id}`);
   return response.data;
 }
+export async function markAllAsRead(): Promise<{ data: { message: string } }> {
+  const response = await apiClient.put<{ data: { message: string } }>("/notifications/read-all");
+  return response.data;
+}

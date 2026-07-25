@@ -31,3 +31,10 @@ def delete_notification(id: int, session: Session = Depends(get_session)):
     session.delete(notification)
     session.commit()
     return SuccessResponse(data={"message": "Notification deleted successfully"})
+@router.put("/read-all", response_model=SuccessResponse[dict])
+def mark_all_as_read(session: Session = Depends(get_session)):
+    notifications = notifications_service.list_notifications(session)
+    for n in notifications:
+        n.read = True
+    session.commit()
+    return SuccessResponse(data={"message": "All notifications marked as read"})

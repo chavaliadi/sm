@@ -11,6 +11,7 @@ import { TendersPage } from "../pages/TendersPage";
 import { ContractorPage } from "../features/contractors/ContractorPage";
 import { ClearancePage } from "../features/clearance/ClearancePage";
 import { TaskManagementPage } from "../features/tasks/TaskManagementPage";
+import { ContractsPage } from "../features/contracts/ContractsPage";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 
 /**
@@ -108,6 +109,16 @@ export const router = createBrowserRouter([
       <ProtectedRoute>
         <AppLayout>
           <ContractorPage />
+        </AppLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/contracts",
+    element: (
+      <ProtectedRoute>
+        <AppLayout>
+          <ContractsPage />
         </AppLayout>
       </ProtectedRoute>
     ),

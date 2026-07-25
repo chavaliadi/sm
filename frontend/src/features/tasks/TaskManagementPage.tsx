@@ -252,7 +252,7 @@ export function TaskManagementPage() {
               <tbody className="divide-y divide-gray-100">
                 {tasks.map((task) => (
                   <tr key={task.id} className="hover:bg-sky-50/40">
-                    <td className="px-5 py-4"><p className="font-semibold text-gray-900">{task.title}</p><p className="mt-0.5 max-w-xs truncate text-xs text-gray-500">{projectsById.get(task.project_id)?.project_code ?? "Unknown project"}{task.description ? ` · ${task.description}` : ""}</p></td>
+                    <td className="px-5 py-4"><p className="font-semibold text-gray-900">{task.title}</p><p className="mt-0.5 max-w-xs truncate text-xs text-gray-500">{projectsById.get(task.project_id) ? `${projectsById.get(task.project_id)!.project_code} - ${projectsById.get(task.project_id)!.name}` : "Unknown project"}{task.description ? ` · ${task.description}` : ""}</p></td>
                     <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${priorityClass(task.priority)}`}>{task.priority.replace("_", " ")}</span></td>
                     <td className="px-5 py-4"><select aria-label={`Status for ${task.title}`} value={task.status} onChange={(event) => void changeStatus(task.id, event.target.value as TaskStatus)} className={`rounded-full px-2.5 py-1 text-xs font-semibold outline-none ${statusClass(task.status)}`}><option value="TODO">To do</option><option value="IN_PROGRESS">In progress</option><option value="DONE">Done</option></select></td>
                     <td className="px-5 py-4 text-gray-600">{formatDate(task.due_date)}</td>
