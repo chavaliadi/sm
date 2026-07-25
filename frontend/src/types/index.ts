@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Shared type definitions mirroring backend schemas. This is the payoff of
  * TypeScript for this project: when a backend field name changes, every
  * page using that type gets a compile error pointing at exactly what broke,
@@ -44,6 +44,8 @@ export interface ProjectRead {
   state: string;
   port_name: string;
   stakeholder_info: string | null;
+  objectives: string | null;
+  milestones: string | null;
   funding_model: string;
   estimated_cost: number;
   approved_cost: number | null;
@@ -62,6 +64,8 @@ export interface ProjectCreate {
   state: string;
   port_name: string;
   stakeholder_info?: string | null;
+  objectives?: string | null;
+  milestones?: string | null;
   funding_model: string;
   estimated_cost: number;
   approved_cost?: number | null;
@@ -75,6 +79,8 @@ export interface ProjectUpdate {
   state?: string;
   port_name?: string;
   stakeholder_info?: string | null;
+  objectives?: string | null;
+  milestones?: string | null;
   funding_model?: string;
   estimated_cost?: number;
   approved_cost?: number | null;

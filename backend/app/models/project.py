@@ -13,6 +13,8 @@ class Project(SQLModel, table=True):
     state: str
     port_name: str
     stakeholder_info: Optional[str] = None
+    objectives: Optional[str] = None
+    milestones: Optional[str] = None
     funding_model: str
     estimated_cost: float
     approved_cost: Optional[float] = None

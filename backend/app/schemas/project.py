@@ -11,6 +11,8 @@ class ProjectRead(SQLModel):
     state: str
     port_name: str
     stakeholder_info: Optional[str] = None
+    objectives: Optional[str] = None
+    milestones: Optional[str] = None
     funding_model: str
     estimated_cost: float
     approved_cost: Optional[float] = None
@@ -29,6 +31,8 @@ class ProjectCreate(SQLModel):
     state: str
     port_name: str
     stakeholder_info: Optional[str] = None
+    objectives: Optional[str] = None
+    milestones: Optional[str] = None
     funding_model: str
     estimated_cost: float
     approved_cost: Optional[float] = None
@@ -42,6 +46,8 @@ class ProjectUpdate(SQLModel):
     state: Optional[str] = None
     port_name: Optional[str] = None
     stakeholder_info: Optional[str] = None
+    objectives: Optional[str] = None
+    milestones: Optional[str] = None
     funding_model: Optional[str] = None
     estimated_cost: Optional[float] = None
     approved_cost: Optional[float] = None

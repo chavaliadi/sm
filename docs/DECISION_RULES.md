@@ -252,6 +252,26 @@ whether the newly-exposed CVEs are actually worse. Re-evaluate once
 react-router-dom releases a version above 8.2.0, or if this app ever
 adopts RSC mode (unlikely for this project's architecture).
 
+### D19. DPR/Tender/Contract routing stages are hardcoded, not admin-configurable
+
+**Decision:** The approval routing stages for DPR (8 states), Tender (14
+stages), and Contract (4 states) are fixed in Python code
+(services/*.py transition matrices), not stored as editable data an
+admin can reconfigure through a UI.
+**Rationale:** RFP 4.6.1 asks for "configurable" multi-level routing.
+Building a genuine admin-configurable workflow engine (define stages,
+store as data, execute dynamically) is a substantial feature — an
+entirely different architecture from the explicit state machines this
+MVP was built and verified against. Given the timeline, hardcoded but
+correct and fully audited state machines were the right tradeoff for
+proving the workflow works, over a flexible-but-unverified generic
+engine.
+**Do NOT:** silently build partial configurability (e.g. one config
+flag) without a full design — that risks a half-working middle ground
+that's worse than either extreme. If real configurability becomes a
+requirement, it's a new phase of work, scoped and reviewed like any
+other decision, not squeezed in ad hoc.
+
 ---
 
 ## Adding a new decision

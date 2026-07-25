@@ -25,6 +25,8 @@ export function ProjectsPage() {
   const [state, setState] = useState("Andhra Pradesh");
   const [portName, setPortName] = useState("Visakhapatnam Port");
   const [stakeholderInfo, setStakeholderInfo] = useState("");
+  const [objectives, setObjectives] = useState("");
+  const [milestones, setMilestones] = useState("");
   const [fundingModel, setFundingModel] = useState("Grant-in-aid");
   const [estimatedCost, setEstimatedCost] = useState<number | "">(100);
   const [approvedCost, setApprovedCost] = useState<number | "">("");
@@ -80,6 +82,8 @@ export function ProjectsPage() {
     setState("Andhra Pradesh");
     setPortName("Visakhapatnam Port");
     setStakeholderInfo("");
+    setObjectives("");
+    setMilestones("");
     setFundingModel("Grant-in-aid");
     setEstimatedCost(100);
     setApprovedCost("");
@@ -96,6 +100,8 @@ export function ProjectsPage() {
     setState(project.state);
     setPortName(project.port_name);
     setStakeholderInfo(project.stakeholder_info || "");
+    setObjectives(project.objectives || "");
+    setMilestones(project.milestones || "");
     setFundingModel(project.funding_model);
     setEstimatedCost(project.estimated_cost);
     setApprovedCost(project.approved_cost ?? "");
@@ -136,6 +142,8 @@ export function ProjectsPage() {
       state,
       port_name: portName.trim(),
       stakeholder_info: stakeholderInfo.trim() || null,
+      objectives: objectives.trim() || null,
+      milestones: milestones.trim() || null,
       funding_model: fundingModel,
       estimated_cost: Number(estimatedCost),
       approved_cost: approvedCost !== "" ? Number(approvedCost) : null,
@@ -331,6 +339,16 @@ export function ProjectsPage() {
                     <td className="px-4 py-3">
                       <div className="font-semibold text-gray-900">{project.name}</div>
                       <div className="text-[11px] text-gray-400">{project.category}</div>
+                      {project.objectives && (
+                        <div className="mt-1 text-[11px] text-gray-600">
+                          <span className="font-semibold text-gray-700">Objectives:</span> {project.objectives}
+                        </div>
+                      )}
+                      {project.milestones && (
+                        <div className="mt-0.5 text-[11px] text-gray-600">
+                          <span className="font-semibold text-gray-700">Milestones:</span> {project.milestones}
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <div className="text-gray-800">{project.port_name}</div>
@@ -547,6 +565,32 @@ export function ProjectsPage() {
                   value={stakeholderInfo}
                   onChange={(e) => setStakeholderInfo(e.target.value)}
                   placeholder="e.g. Chief Engineer S. K. Murthy"
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-xs text-gray-900 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-gray-700">
+                  Project Objectives
+                </label>
+                <textarea
+                  rows={2}
+                  value={objectives}
+                  onChange={(e) => setObjectives(e.target.value)}
+                  placeholder="e.g. Enhance cargo handling capacity by 15 MMTPA and lower logistics costs"
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-xs text-gray-900 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-gray-700">
+                  Key Milestones
+                </label>
+                <textarea
+                  rows={2}
+                  value={milestones}
+                  onChange={(e) => setMilestones(e.target.value)}
+                  placeholder="e.g. Q1: DPR Approval, Q2: Tender Finalization, Q4: Site Mobilization"
                   className="mt-1 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-xs text-gray-900 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                 />
               </div>
