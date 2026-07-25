@@ -235,6 +235,23 @@ first, since the RFP's own phase description doesn't mandate strict
 sequential gating either) — not something to infer from this gap and
 build unprompted.
 
+### D18. react-router-dom pinned at 7.18.1 despite one known CVE — accepted risk
+
+**Decision:** Stay on react-router-dom@7.18.1. Do not downgrade to "fix"
+GHSA-qwww-vcr4-c8h2 (RSC-mode CSRF bypass).
+**Rationale:** Every version from 6.0.0 through 8.2.0 has known CVEs.
+7.18.1 has exactly one (RSC-mode CSRF), and this app uses plain
+client-side routing — no React Server Components anywhere in this
+codebase — so that specific vulnerability's attack surface doesn't
+apply here. Downgrading to 7.11.0 was tried and reverted: it traded one
+inapplicable CVE for 14 others, including open redirect and XSS issues
+that ARE applicable to a client-side app. No version in the current
+release range is genuinely clean.
+**Do NOT:** downgrade this package to silence npm audit without checking
+whether the newly-exposed CVEs are actually worse. Re-evaluate once
+react-router-dom releases a version above 8.2.0, or if this app ever
+adopts RSC mode (unlikely for this project's architecture).
+
 ---
 
 ## Adding a new decision
