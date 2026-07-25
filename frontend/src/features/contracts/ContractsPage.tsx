@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getProjects } from "@/api/projects";
-import type { ProjectRead } from "@/types";
+import { getTenders } from "@/api/tender";
+import type { ProjectRead, TenderRead } from "@/types";
 import { ContractFormDialog } from "./ContractFormDialog";
 import {
   createContract,
@@ -49,18 +50,18 @@ function getErr(error: unknown): string {
 }
 
 const STATUS_COLOR: Record<ContractStatus, string> = {
-  DRAFT:  "bg-slate-100 text-slate-700",
+  DRAFT: "bg-slate-100 text-slate-700",
   ISSUED: "bg-sky-50 text-sky-700",
   ACTIVE: "bg-emerald-50 text-emerald-700",
   CLOSED: "bg-gray-100 text-gray-500",
 };
 
 const WO_STATUS_COLOR: Record<WorkOrderStatus, string> = {
-  DRAFT:       "bg-slate-100 text-slate-700",
-  ISSUED:      "bg-sky-50 text-sky-700",
+  DRAFT: "bg-slate-100 text-slate-700",
+  ISSUED: "bg-sky-50 text-sky-700",
   IN_PROGRESS: "bg-amber-50 text-amber-700",
-  COMPLETED:   "bg-emerald-50 text-emerald-700",
-  CANCELLED:   "bg-red-50 text-red-500",
+  COMPLETED: "bg-emerald-50 text-emerald-700",
+  CANCELLED: "bg-red-50 text-red-500",
 };
 
 // ── Main Page ─────────────────────────────────────────────────────────
@@ -73,8 +74,9 @@ export function ContractsPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [projectFilter, setProjectFilter] = useState("");
 
-  // Projects for filter + form dropdown
+  // Projects + awarded tenders for filter + form dropdown
   const [projects, setProjects] = useState<ProjectRead[]>([]);
+  const [awardedTenders, setAwardedTenders] = useState<TenderRead[]>([]);
 
   // Loading / error
   const [isLoading, setIsLoading] = useState(true);
@@ -119,15 +121,20 @@ export function ContractsPage() {
   useEffect(() => { void loadContracts(); }, [loadContracts]);
 
   useEffect(() => {
-    async function loadProjects() {
+    async function loadFormData() {
       try {
-        const resp = await getProjects({ page_size: 100 });
-        setProjects(resp.data);
+        const [projResp, tenderResp] = await Promise.all([
+          getProjects({ page_size: 100 }),
+          getTenders(1, 100),
+        ]);
+        setProjects(projResp.data);
+        // Only AWARDED tenders can be linked to a new contract (D14 rule)
+        setAwardedTenders(tenderResp.data.filter((t) => t.status === "AWARDED"));
       } catch (e) {
         setError(getErr(e));
       }
     }
-    void loadProjects();
+    void loadFormData();
   }, []);
 
   // ── Contract actions ────────────────────────────────────────────────
@@ -291,7 +298,7 @@ export function ContractsPage() {
           </h2>
           <ContractFormDialog
             contract={editingContract}
-            tenders={[]}   /* Adithya will wire tenders fetch via shared API */
+            tenders={awardedTenders}
             projects={projects}
             isSaving={isSaving}
             onCancel={closeForm}
