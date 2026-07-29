@@ -14,6 +14,7 @@ import {
   updateContract,
 } from "./api";
 import type {
+  CancellationReason,
   ContractCreate,
   ContractListFilters,
   ContractRead,
@@ -103,6 +104,16 @@ export function ContractsPage() {
     end_date: null,
   });
 
+  // WO Transition Modal state
+  const [woModal, setWoModal] = useState<{
+    wo: WorkOrderRead;
+    targetStatus: WorkOrderStatus;
+  } | null>(null);
+  const [woModalRemarks, setWoModalRemarks] = useState("");
+  const [woModalReason, setWoModalReason] = useState<CancellationReason | "">("");
+  const [isWoModalSaving, setIsWoModalSaving] = useState(false);
+  const [woModalError, setWoModalError] = useState<string | null>(null);
+
   // ── Data loading ────────────────────────────────────────────────────
   const loadContracts = useCallback(async () => {
     setIsLoading(true);
@@ -172,12 +183,23 @@ export function ContractsPage() {
     }
   }
 
-  function applyFilters() {
+  function handleStatusFilter(s: string) {
+    setStatusFilter(s);
+    setProjectFilter("");   // reset project when status changes
     setPage(1);
     setFilters({
-      project_id: projectFilter ? Number(projectFilter) : undefined,
-      status: statusFilter ? (statusFilter as ContractStatus) : undefined,
+      status: s ? (s as ContractStatus) : undefined,
+      project_id: undefined,
     });
+  }
+
+  function handleProjectFilter(pid: string) {
+    setProjectFilter(pid);
+    setPage(1);
+    setFilters((prev) => ({
+      ...prev,
+      project_id: pid ? Number(pid) : undefined,
+    }));
   }
 
   function resetFilters() {
@@ -233,14 +255,44 @@ export function ContractsPage() {
     }
   }
 
-  async function advanceWoStatus(wo: WorkOrderRead, nextStatus: WorkOrderStatus) {
-    setError(null);
+  function openWoTransitionModal(wo: WorkOrderRead, targetStatus: WorkOrderStatus) {
+    setWoModal({ wo, targetStatus });
+    setWoModalRemarks("");
+    setWoModalReason("");
+    setWoModalError(null);
+  }
+
+  function closeWoModal() {
+    setWoModal(null);
+    setWoModalRemarks("");
+    setWoModalReason("");
+    setWoModalError(null);
+  }
+
+  async function confirmWoTransition() {
+    if (!woModal) return;
+    const { wo, targetStatus } = woModal;
+
+    const payload: WorkOrderUpdate = { status: targetStatus };
+    if (targetStatus === "COMPLETED") {
+      payload.completion_remarks = woModalRemarks.trim();
+    }
+    if (targetStatus === "CANCELLED") {
+      payload.cancellation_reason = woModalReason ? (woModalReason as CancellationReason) : null;
+      payload.cancellation_remarks = woModalRemarks.trim();
+    }
+
+    setIsWoModalSaving(true);
+    setWoModalError(null);
     try {
-      await updateWorkOrder(wo.contract_id, wo.id, { status: nextStatus });
+      await updateWorkOrder(wo.contract_id, wo.id, payload);
       const resp = await getWorkOrders(wo.contract_id);
       setWorkOrders(resp.data);
+      closeWoModal();
     } catch (err) {
-      setError(getErr(err));
+      setWoModalError(getErr(err));
+    } finally {
+      setIsWoModalSaving(false);
     }
   }
 
@@ -294,11 +346,24 @@ export function ContractsPage() {
       {isFormOpen && (
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="mb-5 text-lg font-semibold text-gray-900">
-            {editingContract === null ? "Create a contract" : "Edit contract"}
+          {editingContract === null
+            ? "Create a contract"
+            : editingContract.status === "CLOSED"
+              ? "View contract (Read-Only)"
+              : "Edit contract"}
           </h2>
           <ContractFormDialog
             contract={editingContract}
-            tenders={awardedTenders}
+            tenders={awardedTenders as Array<{
+              id: number;
+              tender_code: string;
+              title: string;
+              project_id: number;
+              contract_value: number | null;
+              loa_reference: string | null;
+              contract_start_date: string | null;
+              contract_end_date: string | null;
+            }>}
             projects={projects}
             isSaving={isSaving}
             onCancel={closeForm}
@@ -307,55 +372,73 @@ export function ContractsPage() {
         </div>
       )}
 
-      {/* Filters */}
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
-          <label className="grid gap-1 text-sm font-medium text-gray-700">
-            Project
-            <select
-              id="filter-project"
-              value={projectFilter}
-              onChange={(e) => setProjectFilter(e.target.value)}
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 outline-none focus:border-sky-600 focus:ring-2 focus:ring-sky-100"
+      {/* ── Filters: Status tabs → Project dropdown ── */}
+      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
+
+        {/* Row 1: Status tabs */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 mr-1">Status:</span>
+          {(["" , "DRAFT", "ISSUED", "ACTIVE", "CLOSED"] as const).map((s) => {
+            const label = s === "" ? "All" : s.charAt(0) + s.slice(1).toLowerCase();
+            const isActive = statusFilter === s;
+            const tabColor: Record<string, string> = {
+              "": isActive ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200",
+              DRAFT: isActive ? "bg-slate-700 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200",
+              ISSUED: isActive ? "bg-sky-700 text-white" : "bg-sky-50 text-sky-700 hover:bg-sky-100",
+              ACTIVE: isActive ? "bg-emerald-700 text-white" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
+              CLOSED: isActive ? "bg-red-700 text-white" : "bg-red-50 text-red-700 hover:bg-red-100",
+            };
+            return (
+              <button
+                key={s}
+                id={`status-tab-${s || "all"}`}
+                onClick={() => handleStatusFilter(s)}
+                className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${tabColor[s]}`}
+              >
+                {label}
+              </button>
+            );
+          })}
+
+          {/* Active filter pills + reset */}
+          {(statusFilter || projectFilter) && (
+            <button
+              onClick={resetFilters}
+              className="ml-auto rounded-full border border-gray-300 px-3 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100"
             >
-              <option value="">All projects</option>
-              {projects.map((p) => (
+              ✕ Clear filters
+            </button>
+          )}
+        </div>
+
+        {/* Row 2: Project dropdown — filtered by selected status */}
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Project:</span>
+          <select
+            id="filter-project"
+            value={projectFilter}
+            onChange={(e) => handleProjectFilter(e.target.value)}
+            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-sky-600 focus:ring-2 focus:ring-sky-100"
+          >
+            <option value="">All projects</option>
+            {projects
+              .filter((p) =>
+                // When a status tab is active, only show projects that have
+                // contracts with that status (from current filtered result)
+                // When no status filter, show all projects
+                statusFilter
+                  ? contracts.some((c) => c.project_id === p.id)
+                  : true
+              )
+              .map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.project_code} — {p.name}
                 </option>
               ))}
-            </select>
-          </label>
-          <label className="grid gap-1 text-sm font-medium text-gray-700">
-            Status
-            <select
-              id="filter-status"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 outline-none focus:border-sky-600 focus:ring-2 focus:ring-sky-100"
-            >
-              <option value="">All statuses</option>
-              <option value="DRAFT">Draft</option>
-              <option value="ISSUED">Issued</option>
-              <option value="ACTIVE">Active</option>
-              <option value="CLOSED">Closed</option>
-            </select>
-          </label>
-          <div className="flex items-end gap-2">
-            <button
-              id="apply-filters-btn"
-              onClick={applyFilters}
-              className="rounded-md bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
-            >
-              Apply
-            </button>
-            <button
-              onClick={resetFilters}
-              className="rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100"
-            >
-              Reset
-            </button>
-          </div>
+          </select>
+          <span className="text-xs text-gray-400">
+            {total} contract{total !== 1 ? "s" : ""} found
+          </span>
         </div>
       </div>
 
@@ -419,9 +502,9 @@ export function ContractsPage() {
                           <button
                             id={`edit-contract-${contract.id}`}
                             onClick={() => openEdit(contract)}
-                            className="text-sm font-medium text-sky-700 hover:text-sky-900"
+                            className={`text-sm font-medium ${contract.status === "CLOSED" ? "text-gray-500 hover:text-gray-700" : "text-sky-700 hover:text-sky-900"}`}
                           >
-                            Edit
+                            {contract.status === "CLOSED" ? "View" : "Edit"}
                           </button>
                           {contract.status === "DRAFT" && (
                             <button
@@ -445,13 +528,20 @@ export function ContractsPage() {
                               <h3 className="text-sm font-semibold text-gray-700">
                                 Work Orders — {contract.contract_number}
                               </h3>
-                              <button
-                                id={`add-work-order-${contract.id}`}
-                                onClick={() => openWoForm(contract.id)}
-                                className="rounded-md bg-sky-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-800"
-                              >
-                                + Add Work Order
-                              </button>
+                              {/* Only ISSUED or ACTIVE contracts can have new work orders */}
+                              {(contract.status === "ISSUED" || contract.status === "ACTIVE") ? (
+                                <button
+                                  id={`add-work-order-${contract.id}`}
+                                  onClick={() => openWoForm(contract.id)}
+                                  className="rounded-md bg-sky-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-800"
+                                >
+                                  + Add Work Order
+                                </button>
+                              ) : (
+                                <span className="text-xs text-gray-400 italic">
+                                  {contract.status === "CLOSED" ? "Contract closed — no new work orders" : "Issue contract first"}
+                                </span>
+                              )}
                             </div>
 
                             {/* Inline work order create form */}
@@ -502,6 +592,7 @@ export function ContractsPage() {
                                     <input
                                       type="number"
                                       min={0}
+                                      max={contract.contract_value ?? undefined}
                                       value={woFormValues.work_order_value ?? ""}
                                       onChange={(e) =>
                                         setWoFormValues((v) => ({
@@ -511,11 +602,18 @@ export function ContractsPage() {
                                       }
                                       className="rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-sky-500"
                                     />
+                                    {contract.contract_value != null && (
+                                      <span className="text-xs text-gray-400">
+                                        Contract budget: ₹{contract.contract_value.toLocaleString("en-IN")}
+                                      </span>
+                                    )}
                                   </label>
                                   <label className="grid gap-1 text-xs font-medium text-gray-700">
                                     Start Date
                                     <input
                                       type="date"
+                                      min={contract.start_date ?? undefined}
+                                      max={contract.end_date ?? undefined}
                                       value={woFormValues.start_date ?? ""}
                                       onChange={(e) =>
                                         setWoFormValues((v) => ({ ...v, start_date: e.target.value || null }))
@@ -527,6 +625,8 @@ export function ContractsPage() {
                                     End Date
                                     <input
                                       type="date"
+                                      min={woFormValues.start_date ?? contract.start_date ?? undefined}
+                                      max={contract.end_date ?? undefined}
                                       value={woFormValues.end_date ?? ""}
                                       onChange={(e) =>
                                         setWoFormValues((v) => ({ ...v, end_date: e.target.value || null }))
@@ -585,30 +685,46 @@ export function ContractsPage() {
                                       <td className="px-4 py-2 text-gray-500">{fmt(wo.start_date)}</td>
                                       <td className="px-4 py-2 text-gray-500">{fmt(wo.end_date)}</td>
                                       <td className="px-4 py-2">
-                                        <div className="flex gap-2">
+                                        <div className="flex flex-wrap gap-2">
                                           {wo.status === "DRAFT" && (
                                             <button
-                                              onClick={() => void advanceWoStatus(wo, "ISSUED")}
+                                              onClick={() => openWoTransitionModal(wo, "ISSUED")}
                                               className="font-medium text-sky-700 hover:text-sky-900"
                                             >
                                               Issue
                                             </button>
                                           )}
                                           {wo.status === "ISSUED" && (
-                                            <button
-                                              onClick={() => void advanceWoStatus(wo, "IN_PROGRESS")}
-                                              className="font-medium text-amber-700 hover:text-amber-900"
-                                            >
-                                              Start
-                                            </button>
+                                            <>
+                                              <button
+                                                onClick={() => openWoTransitionModal(wo, "IN_PROGRESS")}
+                                                className="font-medium text-amber-700 hover:text-amber-900"
+                                              >
+                                                Start
+                                              </button>
+                                              <button
+                                                onClick={() => openWoTransitionModal(wo, "CANCELLED")}
+                                                className="font-medium text-red-600 hover:text-red-800"
+                                              >
+                                                Cancel
+                                              </button>
+                                            </>
                                           )}
                                           {wo.status === "IN_PROGRESS" && (
-                                            <button
-                                              onClick={() => void advanceWoStatus(wo, "COMPLETED")}
-                                              className="font-medium text-emerald-700 hover:text-emerald-900"
-                                            >
-                                              Complete
-                                            </button>
+                                            <>
+                                              <button
+                                                onClick={() => openWoTransitionModal(wo, "COMPLETED")}
+                                                className="font-medium text-emerald-700 hover:text-emerald-900"
+                                              >
+                                                Complete
+                                              </button>
+                                              <button
+                                                onClick={() => openWoTransitionModal(wo, "CANCELLED")}
+                                                className="font-medium text-red-600 hover:text-red-800"
+                                              >
+                                                Cancel
+                                              </button>
+                                            </>
                                           )}
                                           {(wo.status === "DRAFT" || wo.status === "CANCELLED") && (
                                             <button
@@ -657,6 +773,128 @@ export function ContractsPage() {
           </div>
         </div>
       </div>
+      {/* ── WO Transition Confirmation Modal ── */}
+      {woModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl space-y-4">
+
+            {/* Header */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                Work Order — {woModal.wo.work_order_number}
+              </p>
+              <h3 className="mt-1 text-lg font-bold text-gray-900">
+                {woModal.targetStatus === "ISSUED" && "Issue this Work Order?"}
+                {woModal.targetStatus === "IN_PROGRESS" && "Start this Work Order?"}
+                {woModal.targetStatus === "COMPLETED" && "Mark as Completed"}
+                {woModal.targetStatus === "CANCELLED" && "Cancel this Work Order"}
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">{woModal.wo.title}</p>
+            </div>
+
+            {/* Simple confirmation message for ISSUED / IN_PROGRESS */}
+            {(woModal.targetStatus === "ISSUED" || woModal.targetStatus === "IN_PROGRESS") && (
+              <p className="rounded-lg bg-sky-50 px-4 py-3 text-sm text-sky-800">
+                {woModal.targetStatus === "ISSUED"
+                  ? "This will formally issue the work order. The contractor will be notified."
+                  : "This will mark the work order as in progress. Work has commenced."}
+              </p>
+            )}
+
+            {/* COMPLETED: require completion remarks */}
+            {woModal.targetStatus === "COMPLETED" && (
+              <label className="grid gap-1.5 text-sm font-medium text-gray-700">
+                Completion Remarks <span className="text-red-500">*</span> (min 10 characters)
+                <textarea
+                  rows={4}
+                  value={woModalRemarks}
+                  onChange={(e) => setWoModalRemarks(e.target.value)}
+                  placeholder="Describe what was completed, any deliverables received, inspection notes..."
+                  className="resize-y rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                />
+                {woModalRemarks.length > 0 && woModalRemarks.length < 10 && (
+                  <span className="text-xs text-red-600">
+                    {woModalRemarks.length}/10 characters minimum.
+                  </span>
+                )}
+              </label>
+            )}
+
+            {/* CANCELLED: require reason + remarks */}
+            {woModal.targetStatus === "CANCELLED" && (
+              <div className="space-y-3">
+                <label className="grid gap-1.5 text-sm font-medium text-gray-700">
+                  Cancellation Reason <span className="text-red-500">*</span>
+                  <select
+                    value={woModalReason}
+                    onChange={(e) => setWoModalReason(e.target.value as CancellationReason)}
+                    className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                  >
+                    <option value="">Select a reason</option>
+                    <option value="SCOPE_CHANGE">Scope Change</option>
+                    <option value="CONTRACTOR_DEFAULT">Contractor Default</option>
+                    <option value="MUTUAL_AGREEMENT">Mutual Agreement</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </label>
+                <label className="grid gap-1.5 text-sm font-medium text-gray-700">
+                  Cancellation Remarks <span className="text-red-500">*</span> (min 10 characters)
+                  <textarea
+                    rows={3}
+                    value={woModalRemarks}
+                    onChange={(e) => setWoModalRemarks(e.target.value)}
+                    placeholder="Explain why this work order is being cancelled..."
+                    className="resize-y rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                  />
+                  {woModalRemarks.length > 0 && woModalRemarks.length < 10 && (
+                    <span className="text-xs text-red-600">
+                      {woModalRemarks.length}/10 characters minimum.
+                    </span>
+                  )}
+                </label>
+              </div>
+            )}
+
+            {/* Error from API */}
+            {woModalError && (
+              <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{woModalError}</p>
+            )}
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3 border-t border-gray-100 pt-3">
+              <button
+                type="button"
+                onClick={closeWoModal}
+                className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100"
+              >
+                Go back
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmWoTransition()}
+                disabled={
+                  isWoModalSaving
+                  || (woModal.targetStatus === "COMPLETED" && woModalRemarks.trim().length < 10)
+                  || (woModal.targetStatus === "CANCELLED" && (!woModalReason || woModalRemarks.trim().length < 10))
+                }
+                className={`rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60 ${
+                  woModal.targetStatus === "CANCELLED"
+                    ? "bg-red-700 hover:bg-red-800"
+                    : woModal.targetStatus === "COMPLETED"
+                      ? "bg-emerald-700 hover:bg-emerald-800"
+                      : "bg-sky-700 hover:bg-sky-800"
+                }`}
+              >
+                {isWoModalSaving ? "Saving..."
+                  : woModal.targetStatus === "CANCELLED" ? "Confirm Cancellation"
+                  : woModal.targetStatus === "COMPLETED" ? "Mark Completed"
+                  : woModal.targetStatus === "IN_PROGRESS" ? "Start Work Order"
+                  : "Issue Work Order"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
