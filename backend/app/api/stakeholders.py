@@ -167,7 +167,7 @@ def update_stakeholder(
 
 @router.delete(
     "/{stakeholder_id}",
-    response_model=SuccessResponse[dict],
+    response_model=SuccessResponse[StakeholderRead],
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(require_permission("MANAGE_STAKEHOLDERS"))],
 )
@@ -187,7 +187,7 @@ def delete_stakeholder(
             },
         )
 
-    stakeholders_service.delete_stakeholder(session, stakeholder)
+    deleted = stakeholders_service.delete_stakeholder(session, stakeholder)
 
     ip = request.client.host if request.client else None
     ua = request.headers.get("user-agent")
@@ -203,7 +203,7 @@ def delete_stakeholder(
         user_agent=ua,
     )
 
-    return SuccessResponse(data={"message": "Stakeholder deleted successfully"})
+    return SuccessResponse(data=StakeholderRead.model_validate(deleted))
 
 
 # ── MEETINGS ENDPOINTS ───────────────────────────────────────────────
@@ -347,7 +347,7 @@ def update_meeting(
 
 @meetings_router.delete(
     "/{meeting_id}",
-    response_model=SuccessResponse[dict],
+    response_model=SuccessResponse[MeetingRead],
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(require_permission("MANAGE_STAKEHOLDERS"))],
 )
@@ -367,7 +367,7 @@ def delete_meeting(
             },
         )
 
-    stakeholders_service.delete_meeting(session, meeting)
+    deleted = stakeholders_service.delete_meeting(session, meeting)
 
     ip = request.client.host if request.client else None
     ua = request.headers.get("user-agent")
@@ -383,5 +383,5 @@ def delete_meeting(
         user_agent=ua,
     )
 
-    return SuccessResponse(data={"message": "Meeting deleted successfully"})
+    return SuccessResponse(data=MeetingRead.model_validate(deleted))
 
