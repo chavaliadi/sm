@@ -23,6 +23,7 @@ import type {
   WorkOrderCreate,
   WorkOrderRead,
   WorkOrderStatus,
+  WorkOrderUpdate,
 } from "./types";
 
 // ── Helpers ───────────────────────────────────────────────────────────
