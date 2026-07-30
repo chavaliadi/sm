@@ -7,6 +7,16 @@
 
 export type ContractStatus = "DRAFT" | "ISSUED" | "ACTIVE" | "CLOSED";
 export type WorkOrderStatus = "DRAFT" | "ISSUED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+export type ClosureReason =
+  | "COMPLETED"
+  | "TERMINATED_DEFAULT"
+  | "SHORT_CLOSED_MUTUAL"
+  | "FORCE_MAJEURE";
+export type CancellationReason =
+  | "SCOPE_CHANGE"
+  | "CONTRACTOR_DEFAULT"
+  | "MUTUAL_AGREEMENT"
+  | "OTHER";
 
 export interface ContractRead {
   id: number;
@@ -22,6 +32,8 @@ export interface ContractRead {
   issued_date: string | null;
   milestone_terms: string | null;
   status: ContractStatus;
+  closure_reason: ClosureReason | null;
+  closure_remarks: string | null;
   is_active: boolean;
   created_by: number;
   updated_by: number | null;
@@ -53,6 +65,8 @@ export interface ContractUpdate {
   end_date?: string | null;
   issued_date?: string | null;
   milestone_terms?: string | null;
+  closure_reason?: ClosureReason | null;
+  closure_remarks?: string | null;
 }
 
 export interface WorkOrderRead {
@@ -66,6 +80,9 @@ export interface WorkOrderRead {
   start_date: string | null;
   end_date: string | null;
   status: WorkOrderStatus;
+  completion_remarks: string | null;
+  cancellation_reason: CancellationReason | null;
+  cancellation_remarks: string | null;
   is_active: boolean;
   created_by: number;
   updated_by: number | null;
@@ -92,6 +109,9 @@ export interface WorkOrderUpdate {
   work_order_value?: number | null;
   start_date?: string | null;
   end_date?: string | null;
+  completion_remarks?: string | null;
+  cancellation_reason?: CancellationReason | null;
+  cancellation_remarks?: string | null;
 }
 
 export interface ContractListFilters {

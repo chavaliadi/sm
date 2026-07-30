@@ -72,6 +72,10 @@ class Contract(SQLModel, table=True):
     status: str = Field(default="DRAFT")
     is_active: bool = Field(default=True)
 
+    # Closure fields — populated when status is set to CLOSED
+    closure_reason: Optional[str] = None   # COMPLETED | TERMINATED_DEFAULT | SHORT_CLOSED_MUTUAL | FORCE_MAJEURE
+    closure_remarks: Optional[str] = None  # mandatory for manual early closure (min 10 chars)
+
     created_by: int = Field(foreign_key="users.id")
     updated_by: Optional[int] = Field(default=None, foreign_key="users.id")
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -102,6 +106,11 @@ class WorkOrder(SQLModel, table=True):
 
     status: str = Field(default="DRAFT")
     is_active: bool = Field(default=True)
+
+    # Completion / cancellation evidence
+    completion_remarks: Optional[str] = None   # required when status → COMPLETED
+    cancellation_reason: Optional[str] = None  # SCOPE_CHANGE | CONTRACTOR_DEFAULT | MUTUAL_AGREEMENT | OTHER
+    cancellation_remarks: Optional[str] = None # required when status → CANCELLED
 
     created_by: int = Field(foreign_key="users.id")
     updated_by: Optional[int] = Field(default=None, foreign_key="users.id")

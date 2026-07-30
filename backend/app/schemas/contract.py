@@ -8,12 +8,25 @@ Rules followed:
 
 from datetime import datetime, date
 from typing import Literal, Optional
+
+ClosureReason = Literal[
+    "COMPLETED",
+    "TERMINATED_DEFAULT",
+    "SHORT_CLOSED_MUTUAL",
+    "FORCE_MAJEURE",
+]
 from pydantic import BaseModel
 
 
 # ── Literals ──────────────────────────────────────────────────────────
 ContractStatus = Literal["DRAFT", "ISSUED", "ACTIVE", "CLOSED"]
 WorkOrderStatus = Literal["DRAFT", "ISSUED", "IN_PROGRESS", "COMPLETED", "CANCELLED"]
+CancellationReason = Literal[
+    "SCOPE_CHANGE",
+    "CONTRACTOR_DEFAULT",
+    "MUTUAL_AGREEMENT",
+    "OTHER",
+]
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -48,12 +61,16 @@ class ContractUpdate(BaseModel):
     end_date: Optional[date] = None
     issued_date: Optional[date] = None
     milestone_terms: Optional[str] = None
+    closure_reason: Optional[ClosureReason] = None
+    closure_remarks: Optional[str] = None
 
 
 class ContractRead(ContractBase):
     id: int
     status: ContractStatus
     is_active: bool
+    closure_reason: Optional[ClosureReason] = None
+    closure_remarks: Optional[str] = None
     created_by: int
     updated_by: Optional[int] = None
     created_at: datetime
@@ -90,12 +107,18 @@ class WorkOrderUpdate(BaseModel):
     work_order_value: Optional[float] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None
+    completion_remarks: Optional[str] = None
+    cancellation_reason: Optional[CancellationReason] = None
+    cancellation_remarks: Optional[str] = None
 
 
 class WorkOrderRead(WorkOrderBase):
     id: int
     status: WorkOrderStatus
     is_active: bool
+    completion_remarks: Optional[str] = None
+    cancellation_reason: Optional[CancellationReason] = None
+    cancellation_remarks: Optional[str] = None
     created_by: int
     updated_by: Optional[int] = None
     created_at: datetime
