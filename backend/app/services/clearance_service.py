@@ -47,6 +47,11 @@ def get_clearance_by_id(session: Session, clearance_id: int) -> Optional[Clearan
         return None
     return clearance
 
+def _normalize_dt(dt: Optional[datetime]) -> Optional[datetime]:
+    if dt and getattr(dt, "tzinfo", None) is not None:
+        return dt.replace(tzinfo=None)
+    return dt
+
 def create_clearance(session: Session, clearance_in: ClearanceCreate, current_user_id: int) -> Clearance:
     # Check project exists and is active
     project = session.get(Project, clearance_in.project_id)
@@ -70,13 +75,27 @@ def create_clearance(session: Session, clearance_in: ClearanceCreate, current_us
 
     # Validate date range consistency
     if clearance_in.expiry_date:
-        ref_date = clearance_in.approval_date or clearance_in.application_date
-        if ref_date and clearance_in.expiry_date < ref_date:
+        ref_date = _normalize_dt(clearance_in.approval_date or clearance_in.application_date)
+        exp_date = _normalize_dt(clearance_in.expiry_date)
+        if ref_date and exp_date and exp_date < ref_date:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail={
                     "code": "INVALID_DATE_RANGE",
                     "message": "Expiry date cannot be prior to application or approval date",
+                },
+            )
+
+    # Validate rejection remarks
+    c_status = clearance_in.status.value if hasattr(clearance_in.status, "value") else str(clearance_in.status)
+    if c_status == "REJECTED":
+        if not clearance_in.remarks or not clearance_in.remarks.strip() or len(clearance_in.remarks.strip()) < 5:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "code": "MISSING_REJECTION_REMARKS",
+                    "message": "Mandatory rejection remarks (minimum 5 characters) required when status is REJECTED",
+                    "field": "remarks",
                 },
             )
 
@@ -86,9 +105,9 @@ def create_clearance(session: Session, clearance_in: ClearanceCreate, current_us
         title=clearance_in.title,
         authority_name=clearance_in.authority_name,
         status=clearance_in.status.value if hasattr(clearance_in.status, "value") else str(clearance_in.status),
-        application_date=clearance_in.application_date,
-        approval_date=clearance_in.approval_date,
-        expiry_date=clearance_in.expiry_date,
+        application_date=_normalize_dt(clearance_in.application_date),
+        approval_date=_normalize_dt(clearance_in.approval_date),
+        expiry_date=_normalize_dt(clearance_in.expiry_date),
         document_url=clearance_in.document_url,
         remarks=clearance_in.remarks,
         created_by=current_user_id,
@@ -108,9 +127,9 @@ def update_clearance(
     update_data = clearance_in.model_dump(exclude_unset=True)
 
     # Validate date range consistency on update
-    new_expiry = update_data.get("expiry_date", db_clearance.expiry_date)
-    new_approval = update_data.get("approval_date", db_clearance.approval_date)
-    new_application = update_data.get("application_date", db_clearance.application_date)
+    new_expiry = _normalize_dt(update_data.get("expiry_date", db_clearance.expiry_date))
+    new_approval = _normalize_dt(update_data.get("approval_date", db_clearance.approval_date))
+    new_application = _normalize_dt(update_data.get("application_date", db_clearance.application_date))
     if new_expiry:
         ref_date = new_approval or new_application
         if ref_date and new_expiry < ref_date:
@@ -122,10 +141,28 @@ def update_clearance(
                 },
             )
 
+    # Validate rejection remarks on update
+    target_status = update_data.get("status", db_clearance.status)
+    if hasattr(target_status, "value"):
+        target_status = target_status.value
+    if str(target_status) == "REJECTED":
+        target_remarks = update_data.get("remarks", db_clearance.remarks)
+        if not target_remarks or not target_remarks.strip() or len(target_remarks.strip()) < 5:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "code": "MISSING_REJECTION_REMARKS",
+                    "message": "Mandatory rejection remarks (minimum 5 characters) required when setting status to REJECTED",
+                    "field": "remarks",
+                },
+            )
+
     for field, value in update_data.items():
         if value is not None:
             if hasattr(value, "value"):
                 value = value.value
+            if isinstance(value, datetime):
+                value = _normalize_dt(value)
             setattr(db_clearance, field, value)
             
     db_clearance.updated_by = current_user_id

@@ -47,6 +47,10 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['updated_by'], ['users.id'], ),
         sa.PrimaryKeyConstraint('id')
         )
+    else:
+        existing_cols = {col['name'] for col in inspector.get_columns('clearances')}
+        if 'document_url' not in existing_cols:
+            op.add_column('clearances', sa.Column('document_url', sqlmodel.sql.sqltypes.AutoString(), nullable=True))
 
     inspector = inspect(bind)
     existing_indexes = (

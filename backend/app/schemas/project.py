@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Optional
+from pydantic import field_validator
 from sqlmodel import SQLModel
 
 
@@ -38,6 +39,23 @@ class ProjectCreate(SQLModel):
     approved_cost: Optional[float] = None
     lifecycle_stage: Optional[str] = "INITIATION"
 
+    @field_validator("project_code", "name", "category", "state", "port_name", "funding_model", mode="before")
+    @classmethod
+    def validate_non_empty(cls, v: str) -> str:
+        if isinstance(v, str):
+            v_stripped = v.strip()
+            if not v_stripped:
+                raise ValueError("Field cannot be empty or whitespace only")
+            return v_stripped
+        return v
+
+    @field_validator("estimated_cost", "approved_cost", mode="before")
+    @classmethod
+    def validate_cost_non_negative(cls, v: Optional[float]) -> Optional[float]:
+        if v is not None and v < 0:
+            raise ValueError("Cost cannot be negative")
+        return v
+
 
 class ProjectUpdate(SQLModel):
     project_code: Optional[str] = None
@@ -53,4 +71,22 @@ class ProjectUpdate(SQLModel):
     approved_cost: Optional[float] = None
     lifecycle_stage: Optional[str] = None
     is_active: Optional[bool] = None
+
+    @field_validator("project_code", "name", "category", "state", "port_name", "funding_model", mode="before")
+    @classmethod
+    def validate_non_empty_optional(cls, v: Optional[str]) -> Optional[str]:
+        if isinstance(v, str):
+            v_stripped = v.strip()
+            if not v_stripped:
+                raise ValueError("Field cannot be empty or whitespace only")
+            return v_stripped
+        return v
+
+    @field_validator("estimated_cost", "approved_cost", mode="before")
+    @classmethod
+    def validate_cost_non_negative_optional(cls, v: Optional[float]) -> Optional[float]:
+        if v is not None and v < 0:
+            raise ValueError("Cost cannot be negative")
+        return v
+
 
