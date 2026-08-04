@@ -87,4 +87,4 @@ frontend/.env
 
 #Agent skills 
 .agents
-
+.skills-lock.json
