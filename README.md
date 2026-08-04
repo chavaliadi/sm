@@ -70,6 +70,8 @@ stateDiagram-v2
     AWARDED --> CLOSED : Tender Concluded
 ```
 
+> **Financial Risk Safeguard (D17-REVISED):** Transitioning a tender to `AWARDED` strictly requires the associated project's DPR status to be `APPROVED` or `FUNDS_RELEASED`, preventing legal and financial commitments prior to Ministry sanction.
+
 ### 2.3 Contract & Work Order State Machine (Phase 2)
 Contracts enforce the **D14 rule** (cannot be created against un-awarded tenders):
 * **Contract Statuses:** `DRAFT` → `ISSUED` → `ACTIVE` → `CLOSED`
@@ -120,7 +122,9 @@ The application implements a clean, decoupled **Layered Architecture**:
 * **D11. Standardized Error Format:** `HTTPException` with `{"code", "message", "field"}` detail payload.
 * **D12. Secure Read Schemas:** Endpoints return Pydantic `*Read` schemas, hiding internal models.
 * **D14. Contract Creation Constraint:** Contracts can **ONLY** be created against tenders in `AWARDED` status.
-* **D17. Parallel Phase 2 Progression:** Statutory clearances and tenders can be registered and progressed for a project regardless of its DPR status.
+* **D17-REVISED. Parallel Phase 2 Progression with DPR Financial Risk Gate:** Statutory clearances and tenders progress in parallel with DPR review up to `CONTRACT_GENERATED`. Transitioning a tender to `AWARDED` strictly requires the project DPR status to be `APPROVED` or `FUNDS_RELEASED` to eliminate financial liability prior to sanction.
+* **D18. Router Version Pinning:** `react-router-dom` pinned at `@7.18.1` for plain client-side routing (RSC-mode CSRF vulnerability non-applicable).
+* **D19. Audited State Machine Transitions:** State transition matrices for DPR (8 states), Tender (14 stages), and Contract (4 states) are explicitly coded in service layers for predictable auditability rather than dynamic UI configuration.
 
 ---
 
@@ -138,8 +142,8 @@ All feature modules, core services, and management screens are **100% complete a
 | **6. Notifications System** | Topbar bell icon with unread count badge, drop-down notification list (`NotificationsPanel.tsx`), periodic polling, dismiss action (`DELETE /notifications/{id}`). | **Complete — Verified** |
 | **7. Stakeholders & Meetings** | Stakeholder directory, project meeting scheduling, participant mapping, meeting minutes. | **Complete — Verified** |
 | **8. Statutory Clearances** | CRZ, EC, Forest, CTO, Land Acquisition & Utility Shifting clearance tracking, approval workflow, expiry monitoring summary (`/api/clearances/summary`). | **Complete — Verified** |
-| **9. Tendering & Award Safeguards** | 14-stage tender workflow, bid submission engine, financial/technical evaluation & L1/L2/L3 ranking, strict award safeguard (`awarded_bid_id` only allowed when status is `AWARDED`). | **Complete — Verified** |
-| **10. Contractor Onboarding** | Contractor registration, GST/PAN/Reg verification, sequential status machine (`Registered` → `Verified` → `Empanelled`), document URL tracking. | **Complete — Verified** |
+| **9. Tendering & Award Safeguards** | 14-stage tender workflow, bid submission engine, financial/technical evaluation & L1/L2/L3 ranking, strict award safeguard (`awarded_bid_id` only allowed when status is `AWARDED`), plus DPR approval gate on `AWARDED` status transition (D17-REVISED). | **Complete — Verified** |
+| **10. Contractor Onboarding** | Contractor registration, GST/PAN/Bank/Reg verification validation suite, sequential status machine (`Registered` → `Verified` → `Empanelled`), document URL tracking. | **Complete — Verified** |
 | **11. Contracts & Work Orders** | Awarded tender contract binding (D14 enforcement), contract lifecycle (`ACTIVE`/`ISSUED`), nested Work Orders with scope & milestone value tracking. | **Complete — Verified** |
 | **12. Executive Dashboard (2+2 Charts)** | Portfolio metrics, 7 live KPI cards, 2 Bar Charts (*Projects by Stage*, *Tender Pipeline*), 2 Pie Charts (*Task Breakdown*, *Clearance Status*). | **Complete — Verified** |
 
@@ -274,4 +278,6 @@ SagarMala/
 * **Technical Decision Records:** `docs/DECISION_RULES.md`
 * **Development & Agent Guidelines:** `DEVELOPMENT_RULES.md`
 * **Phase 1 Architectural Spec:** `Sagarmala2_MVP_Project_Plan.md`
+* **Phase 2 Procurement Workflow:** `docs/Phase2_Procurement_Workflow.md`
+* **14-Stage Tendering Workflow Handbook:** `docs/tendering_workflow.md`
 * **Phase 2 Module Handbooks:** `docs/team/`
